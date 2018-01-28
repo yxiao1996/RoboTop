@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+import copy
 #from pkg_name.util import HelloGoodbye #Imports module. Not limited to modules in this pkg. 
 from std_msgs.msg import String #Imports msg
 from robocon_msgs.msg import FSMState, BoolStamped
@@ -12,7 +13,7 @@ class FSM(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Build transition dictionary
-        self.states_dict = rospy.get_param("~states". {})
+        self.states_dict = rospy.get_param("~states", {})
         # Validate state and global transitions
         if not self._validateStates(self.states_dict):
             rospy.signal_shutdown("[%s] Incoherent definition." %self.node_name)
@@ -35,11 +36,11 @@ class FSM(object):
         nodes = rospy.get_param("~nodes")
 
         self.active_nodes = None
-        for node_name topic_name in nodes.items():
+        for node_name, topic_name in nodes.items():
             self.pub_dict[node_name] = rospy.Publisher(topic_name, BoolStamped, queue_size=1, latch=True)
         
         # Process events definition
-        param_events_dict = rospy.get_param("~events". {})
+        param_events_dict = rospy.get_param("~events", {})
         if not self._validateEvents(param_events_dict):
             rospy.signal_shutdown("[%s] Invalid event definition." %self.node_name)
             return   
@@ -123,7 +124,7 @@ class FSM(object):
     
     def isValidState(self,state):
         return state in self.states_dict.keys()
-        
+
     def publish(self):
         self.publishBools()
         self.publishState()
