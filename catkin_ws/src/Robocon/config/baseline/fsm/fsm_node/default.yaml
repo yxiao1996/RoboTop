@@ -1,0 +1,22 @@
+# Initial state of the FSM
+initial_state: "JOYSTICK_CONTROL"
+
+events:
+  fake_event:
+    topic: "joy_mapper_node/fake_event"
+    msg_type: "BoolStamped"
+    trigger: True
+
+global_transitions:
+  joystick_override_on: "JOYSTICK_CONTROL"
+  
+nodes:
+  detecter_node: "detector_node/switch"
+
+states:
+  JOYSTICK_CONTROL:
+    transitions:
+      fake_event: "JOYSTICK_CONTROL"
+    active_nodes:
+    - detecter_node
+      

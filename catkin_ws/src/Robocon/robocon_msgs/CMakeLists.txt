@@ -21,6 +21,8 @@ add_message_files(
   LaserScan.msg
   pwmset.msg
   remoter_msg.msg
+  FSMState.msg
+  BoolStamped.msg
 )
 
 
