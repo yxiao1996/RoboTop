@@ -1,0 +1,8 @@
+prefix=/home/yxiao1996/workspace/RoboTop/catkin_ws/devel
+
+Name: robocon_msgs
+Description: Description of robocon_msgs
+Version: 1.0.0
+Cflags: -I/home/yxiao1996/workspace/RoboTop/catkin_ws/devel/include
+Libs: -L/home/yxiao1996/workspace/RoboTop/catkin_ws/devel/lib 
+Requires: geometry_msgs roscpp rospy sensor_msgs std_msgs message_runtime visualization_msgs

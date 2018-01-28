@@ -1,0 +1,2 @@
+set(robocon_msgs_MESSAGE_FILES "/home/yxiao1996/workspace/RoboTop/catkin_ws/src/Robocon/robocon_msgs/msg/chassis_msg.msg;/home/yxiao1996/workspace/RoboTop/catkin_ws/src/Robocon/robocon_msgs/msg/commonMsg.msg;/home/yxiao1996/workspace/RoboTop/catkin_ws/src/Robocon/robocon_msgs/msg/LaserScan.msg;/home/yxiao1996/workspace/RoboTop/catkin_ws/src/Robocon/robocon_msgs/msg/pwmset.msg;/home/yxiao1996/workspace/RoboTop/catkin_ws/src/Robocon/robocon_msgs/msg/remoter_msg.msg")
+set(robocon_msgs_SERVICE_FILES "")
