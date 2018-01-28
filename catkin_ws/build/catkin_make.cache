@@ -1,2 +1,0 @@
-Robocon/robocon_msgs:fsm
--DCATKIN_DEVEL_PREFIX=/home/yxiao1996/workspace/RoboTop/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/yxiao1996/workspace/RoboTop/catkin_ws/install -G Unix Makefiles
