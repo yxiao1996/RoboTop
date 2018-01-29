@@ -23,6 +23,7 @@ add_message_files(
   remoter_msg.msg
   FSMState.msg
   BoolStamped.msg
+  CCD_msg.msg
 )
 
 

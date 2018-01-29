@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>Robocon</name>
+  <name>robocon</name>
   <version>1.0.0</version>
   <description>The Robocon meta package</description>
 
