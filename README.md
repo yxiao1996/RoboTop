@@ -16,13 +16,19 @@
       2. 相机接口；
       3. 节点通信接口：robocon_msg；
       4. 状态机节点：fsm
-      
+
+  *  #### 循线控制（CCDcontrol）
+  
     * 循线控制（CCDcontrol）包含实现循线功能的节点
       1. CCD解码节点：ccd_decoder;
-      
+ 
+  * #### 目标检测（objectdetection）
+  
     * 目标检测（objectdetection）包含实现目标检测功能的节点
       1. 目标检测节点：detector；
-      
+  
+  * #### 模板（template）
+  
     * 程序包模板（template）包含编写ROS节点的模板
       1. ROS节点模板：pkg_name；
       
