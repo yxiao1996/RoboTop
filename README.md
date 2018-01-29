@@ -19,7 +19,7 @@
 
   *  #### 循线控制（CCDcontrol）
   
-    * 循线控制（CCDcontrol）包含实现循线功能的节点
+     * 循线控制（CCDcontrol）包含实现循线功能的节点
       1. CCD解码节点：ccd_decoder;
  
   * #### 目标检测（objectdetection）
