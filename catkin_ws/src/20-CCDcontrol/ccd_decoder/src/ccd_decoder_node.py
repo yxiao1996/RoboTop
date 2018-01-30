@@ -59,7 +59,7 @@ class ccd_decoder_node(object):
             self.ccd_msg.ccd_2 = np.uint8(ccd_mid)
         else:
             self.ccd_msg.ccd_3 = np.uint8(ccd_mid)
-        rospy.loginfo("ccd: [%s], mid:[%s]" %(ccd_num, ccd_mid))
+        rospy.loginfo("[%s] ccd: [%s], mid:[%s]" %(self.node_name, ccd_num, ccd_mid))
         # print ccd_data
         #ccd_msg.data = ccd_data
         if self.select % 4 == 3:

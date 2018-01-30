@@ -26,6 +26,7 @@ add_message_files(
   CCD_msg.msg
   CCD_data.msg
   CCD_pose.msg
+  Twist2DStamped.msg
 )
 
 

@@ -1,0 +1,24 @@
+<launch>
+    <arg name="veh" default="Robo" doc="Name of vehicle. ex: megaman"/>
+    <arg name="local" default="false" doc="true for running on laptop. false for running on vehicle."/>
+    <arg name="config" default="baseline" doc="Specify a config."/>
+    <arg name="param_file_name" default="default"/>
+
+    <node ns="$(arg veh)" name="ccd_decoder_node" pkg="ccd_decoder" type="ccd_decoder_node.py" output="screen"/>
+	<node ns="$(arg veh)" name="ccd_filter_node" pkg="ccd_filter" type="ccd_filter_node.py" output="screen">
+	    <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_filter_node/$(arg param_file_name).yaml"/>
+		<!-- Setup parameters -->
+		<!--<param name="~pub_timestep" value="0.5"/>-->
+		<!-- Remapping topics -->
+		<!--<remap from="~topic_b" to="~topic_a"/>-->
+		<!-- <remap from="~topic_b" to="talker/topic_a"/> -->
+	</node>
+	<node ns="$(arg veh)" name="ccd_control_node" pkg="ccd_control" type="ccd_control_node.py" output="screen">
+	    <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_control_node/$(arg param_file_name).yaml"/>
+		<!-- Setup parameters -->
+		<param name="~pub_timestep" value="0.5"/>
+		<!-- Remapping topics -->
+		<!--<remap from="~topic_b" to="~topic_a"/>-->
+		<!-- <remap from="~topic_b" to="talker/topic_a"/> -->
+	</node>
+</launch>

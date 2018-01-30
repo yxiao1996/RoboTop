@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package>
-  <name>pkg_name</name>
+  <name>ccd_control</name>
   <version>1.0.0</version>
   <description>
-The package `pkg_name` is a template for ROS packages.
+The package `ccd_control` is a template for ROS packages.
 
 For the tutorial, see [](#ros-python-howto).
 </description>
@@ -24,7 +24,7 @@ For the tutorial, see [](#ros-python-howto).
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/pkg_name</url> -->
+  <!-- <url type="website">http://wiki.ros.org/ccd_control</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
