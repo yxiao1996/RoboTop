@@ -3,7 +3,8 @@ import rospy
 from std_msgs.msg import String #Imports msg
 from ccd_decoder.ccd import CCD as Decoder
 from Tkinter import *
-from robocon_msgs.msg import CCD_msg
+from robocon_msgs.msg import CCD_data
+import numpy as np
 
 class ccd_decoder_node(object):
     def __init__(self):
@@ -18,13 +19,16 @@ class ccd_decoder_node(object):
         # setup timer
         self.start_time = rospy.Time.now()
 
+        self.select = 0
+        self.ccd_msg = CCD_data()
+
         # Save the name of the node
         self.node_name = rospy.get_name()
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Setup publishers
-        self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_msg, queue_size=1)
+        self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_data, queue_size=1)
         # Setup subscriber
         #self.sub_topic_b = rospy.Subscriber("~topic_b", String, self.cbTopic)
         # Read parameters
@@ -44,13 +48,24 @@ class ccd_decoder_node(object):
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
 
     def cbprocess(self,event):
-        rospy.loginfo("[%s]" %(rospy.Time.now()-self.start_time))
-        self.start_time = rospy.Time.now()
-        ccd_msg = CCD_msg()        
-        ccd_data = self.decoder.read()
+        
+        self.start_time = rospy.Time.now()        
+        ccd_num, ccd_mid = self.decoder.read()
+        if ccd_num == 0:
+            self.ccd_msg.ccd_0 = np.uint8(ccd_mid)
+        elif ccd_num == 1:
+            self.ccd_msg.ccd_1 = np.uint8(ccd_mid)
+        elif ccd_num == 2:
+            self.ccd_msg.ccd_2 = np.uint8(ccd_mid)
+        else:
+            self.ccd_msg.ccd_3 = np.uint8(ccd_mid)
+        rospy.loginfo("ccd: [%s], mid:[%s]" %(ccd_num, ccd_mid))
         # print ccd_data
-        ccd_msg.data = ccd_data
-        self.pub_ccd_msg.publish(ccd_msg)
+        #ccd_msg.data = ccd_data
+        if self.select % 4 == 3:
+            self.pub_ccd_msg.publish(self.ccd_msg)
+        else:
+            self.select += 1
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))

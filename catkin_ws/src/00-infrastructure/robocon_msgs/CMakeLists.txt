@@ -24,6 +24,8 @@ add_message_files(
   FSMState.msg
   BoolStamped.msg
   CCD_msg.msg
+  CCD_data.msg
+  CCD_pose.msg
 )
 
 
