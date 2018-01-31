@@ -2,3 +2,12 @@ d_offset: 0.0
 K_d: -1.0
 K_phi: -1.0
 v_bar: 1.0
+# PID controllers' parameters
+PGain_track: -1.0
+IGain_track: -1.0
+DGain_track: -1.0
+
+PGain_head: -1.0
+IGain_head: -1.0
+DGain_head: -1.0
+

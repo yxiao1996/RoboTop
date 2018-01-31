@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from robocon_msgs.msg import CCD_pose, Twist2DStamped
-
+from ccd_control.PID import PIDController
 class ccd_control_node(object):
     def __init__(self):
         # Setup buffers
@@ -16,6 +16,16 @@ class ccd_control_node(object):
         self.K_d = rospy.get_param("~K_d")
         self.K_phi = rospy.get_param("~K_phi")
         self.v_bar = rospy.get_param("~v_bar")
+        self.pid_track_PGain = rospy.get_param("~PGain_track")
+        self.pid_track_IGain = rospy.get_param("~IGain_track")
+        self.pid_track_DGain = rospy.get_param("~DGain_track")
+        self.pid_head_PGain = rospy.get_param("~PGain_head")
+        self.pid_head_IGain = rospy.get_param("~PIain_head")
+        self.pid_head_DGain = rospy.get_param("~PDain_head")
+
+        # Setup PID controller
+        self.pid_track = PIDController(pid_track_PGain, pid_track_IGain, pid_track_DGain)
+        self.pid_head = PIDController(pid_head_PGain, pid_head_IGain, pid_head_DGain)
 
         # Save the name of the node
         self.node_name = rospy.get_name()
@@ -46,10 +56,19 @@ class ccd_control_node(object):
         #self.cdPub()
 
     def cdPub(self, event):
+        # calculate error
         corss_track_error = self.d - self.d_offset
         heading_error = self.phi
+
+        # Calculate pid control
+        corss_track_ctl = self.pid_track.update(corss_track_error)
+        heading_ctl = self.pid_head.update(heading_error)
+
+        # Calculate control
         omega = self.K_d * corss_track_error + self.K_phi * heading_error
         v = self.v_bar
+
+        # Publish control message
         car_cmd_msg = Twist2DStamped()
         car_cmd_msg.header.stamp = rospy.Time.now()
         car_cmd_msg.v = v
