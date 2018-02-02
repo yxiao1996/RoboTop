@@ -4,14 +4,56 @@
     <arg name="config" default="baseline" doc="Specify a config."/>
     <arg name="param_file_name" default="default"/>
 
-    <include file="$(find usb_cam)/launch/usb_cam-test.launch">
-    </include>
-    <!-- intersection control -->
-    <node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
-        <rosparam command="load" file="$(find Robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
-    </node>
-    <node ns="$(arg veh)" pkg="detector" type="detector_node.py" name="detector_node" output="screen"/>
-    <!-- Publications -->
+    <!-- switch args-->
+    <arg name="camera" default="false"/>
+    <arg name="detect" default="false"/>
+    <arg name="fsm" default="true"/>
+    <arg name="jotstick" default="true"/>
+    <arg name="encoder" default="true"/>
+    <arg name="ccd" default="false"/>
 
-    <!-- Subscriptions -->
+    <!-- Start Camera-->
+    <group if="$(arg camera)">
+        <include file="$(find usb_cam)/launch/usb_cam-test.launch">
+        </include>
+    </group>
+
+    <!-- Start finite state machine -->
+    <group if="$(arg fsm)">    
+        <node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
+        </node>
+    </group>
+
+    <!-- Start Joystick -->
+    <group if="$(arg jotstick)">
+        <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
+            <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
+        </node>
+    </group>
+
+    <!-- Start Serial Port Encoder -->
+    <group if="$(arg encoder)">
+        <node ns="$(arg veh)" pkg="serial_encoder" type="serial_encoder_node.py" name="serial_encoder_node" output="screen">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_encoder/serial_encoder_node/$(arg param_file_name).yaml"/>
+            <remap from="/Robo/serial_encoder_node/mode" to="/Robo/fsm_node/state"/>
+            <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
+        </node>
+    </group>
+
+    <!-- Start CCD control -->
+    <group if="$(arg ccd)">
+        <node ns="$(arg veh)" pkg="ccd_decoder" type="ccd_decoder_node.py" name="ccd_decoder_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="ccd_filter" type="ccd_filter_node.py" name="ccd_filter_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="ccd_control" type="ccd_control_node.py" name="ccd_control_node" output="screen"/>
+    </group>
+
+    <!-- Start Object Detector-->
+    <group if="$(arg detect)">
+        <node ns="$(arg veh)" pkg="detector" type="detector_node.py" name="detector_node" output="screen"/>
+        <!-- Publications -->
+
+        <!-- Subscriptions -->
+    </group>
 </launch>

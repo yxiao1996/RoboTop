@@ -27,6 +27,7 @@ add_message_files(
   CCD_data.msg
   CCD_pose.msg
   Twist2DStamped.msg
+  Joy6channel.msg
 )
 
 

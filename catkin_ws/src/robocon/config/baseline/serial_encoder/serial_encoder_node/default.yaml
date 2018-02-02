@@ -1,0 +1,7 @@
+serial_protocol:
+   - "channel_0"
+   - "channel_1"
+   - "channel_2"
+   - "channel_3"
+   - "button_0"
+   - "button_1"
