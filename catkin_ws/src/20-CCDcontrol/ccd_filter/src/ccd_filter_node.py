@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String #Imports msg
-from robocon_msgs.msg import CCD_data, CCD_pose
+from robocon_msgs.msg import CCD_data, CCD_pose, BoolStamped
 import math
 
 class ccd_filter_node(object):
@@ -11,6 +11,9 @@ class ccd_filter_node(object):
         self.data_1 = 0
         self.data_2 = 0
         self.data_3 = 0   
+
+        # Setup state buffer
+        self.active = False
 
         # Setup parameter
         self.K_d = rospy.get_param("~K_d")
@@ -24,8 +27,8 @@ class ccd_filter_node(object):
         # Setup publishers
         self.pub_pose = rospy.Publisher("~pose",CCD_pose, queue_size=1)
         # Setup subscriber
-        self.sub_ccd_data = rospy.Subscriber("/Robo/ccd_decoder_node/ccd_msg", CCD_data, self.cdData)
-        
+        self.sub_ccd_data = rospy.Subscriber("~ccd_msg", CCD_data, self.cbData)
+        self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
     def setupParameter(self,param_name,default_value):
@@ -34,7 +37,12 @@ class ccd_filter_node(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
-    def cdData(self,msg):
+    def cbSwitch(self, msg):
+        self.active = msg.data
+
+    def cbData(self,msg):
+        if self.active == False:
+            return
         self.data_0 = msg.ccd_0
         #rospy.loginfo("[%s]: (%s, %s)" %(self.node_name,0, msg.ccd_0))
         self.data_2 = msg.ccd_1

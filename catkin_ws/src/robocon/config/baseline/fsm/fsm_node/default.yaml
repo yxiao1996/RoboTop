@@ -2,21 +2,33 @@
 initial_state: "JOYSTICK_CONTROL"
 
 events:
-  fake_event:
-    topic: "joy_mapper_node/fake_event"
+  joystick_override_on: 
+    topic: "joy_mapper_node/joystick_override"
     msg_type: "BoolStamped"
     trigger: True
+  joystick_override_off: 
+    topic: "joy_mapper_node/joystick_override"
+    msg_type: "BoolStamped"
+    trigger: False
 
 global_transitions:
   joystick_override_on: "JOYSTICK_CONTROL"
   
 nodes:
   detecter_node: "detector_node/switch"
+  ccd_filter_node: "ccd_filter_node/switch"
+  ccd_control_node: "ccd_control_node/switch"
+  encoder_node_js: "serial_encoder_node/switch"
 
 states:
   JOYSTICK_CONTROL:
     transitions:
-      fake_event: "JOYSTICK_CONTROL"
+      joystick_override_off: "LINE_FOLLOWING"
     active_nodes:
     - detecter_node
+    - encoder_node_js
+  LINE_FOLLOWING:
+    active_nodes:
+    - ccd_filter_node
+    - ccd_control_node
       

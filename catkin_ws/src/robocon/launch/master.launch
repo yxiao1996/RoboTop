@@ -8,9 +8,10 @@
     <arg name="camera" default="false"/>
     <arg name="detect" default="false"/>
     <arg name="fsm" default="true"/>
-    <arg name="jotstick" default="true"/>
+    <arg name="joystick" default="true"/>
     <arg name="encoder" default="true"/>
-    <arg name="ccd" default="false"/>
+    <arg name="decoder" default="true"/>
+    <arg name="ccd" default="true"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">
@@ -26,7 +27,7 @@
     </group>
 
     <!-- Start Joystick -->
-    <group if="$(arg jotstick)">
+    <group if="$(arg joystick)">
         <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen"/>
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
@@ -37,16 +38,25 @@
     <group if="$(arg encoder)">
         <node ns="$(arg veh)" pkg="serial_encoder" type="serial_encoder_node.py" name="serial_encoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_encoder/serial_encoder_node/$(arg param_file_name).yaml"/>
-            <remap from="/Robo/serial_encoder_node/mode" to="/Robo/fsm_node/state"/>
             <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
+            <remap from="/Robo/serial_encoder_node/ctl_data" to="/Robo/ccd_control_node/car_cmd"/>
         </node>
     </group>
 
+    <!-- Start Serial Port Decoder -->
+    <group if="$(arg decoder)">
+        <node ns="$(arg veh)" pkg="serial_decoder" type="serial_decoder_node.py" name="serial_decoder_node" output="screen"/>
+    </group>
+
     <!-- Start CCD control -->
-    <group if="$(arg ccd)">
-        <node ns="$(arg veh)" pkg="ccd_decoder" type="ccd_decoder_node.py" name="ccd_decoder_node" output="screen"/>
-        <node ns="$(arg veh)" pkg="ccd_filter" type="ccd_filter_node.py" name="ccd_filter_node" output="screen"/>
-        <node ns="$(arg veh)" pkg="ccd_control" type="ccd_control_node.py" name="ccd_control_node" output="screen"/>
+    <group if="$(arg ccd)">        
+        <node ns="$(arg veh)" pkg="ccd_filter" type="ccd_filter_node.py" name="ccd_filter_node" output="screen">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_filter_node/$(arg param_file_name).yaml"/>
+            <remap from="/Robo/ccd_filter_node/ccd_msg" to="/Robo/serial_decoder_node/ccd_msg"/>
+        </node>
+        <node ns="$(arg veh)" pkg="ccd_control" type="ccd_control_node.py" name="ccd_control_node" output="screen">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_control_node/$(arg param_file_name).yaml"/>
+        </node>
     </group>
 
     <!-- Start Object Detector-->

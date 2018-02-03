@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String #Imports msg
-from robocon_msgs.msg import CCD_pose, Twist2DStamped
+from robocon_msgs.msg import CCD_pose, Twist2DStamped, BoolStamped
 from ccd_control.PID import PIDController
 class ccd_control_node(object):
     def __init__(self):
@@ -10,6 +10,9 @@ class ccd_control_node(object):
         self.phi = 0.0
         self.v = 0.0
         self.omega = 0.0
+
+        # set state buffer
+        self.active = False
 
         # Setup parameters
         self.d_offset = rospy.get_param("~d_offset")
@@ -20,12 +23,12 @@ class ccd_control_node(object):
         self.pid_track_IGain = rospy.get_param("~IGain_track")
         self.pid_track_DGain = rospy.get_param("~DGain_track")
         self.pid_head_PGain = rospy.get_param("~PGain_head")
-        self.pid_head_IGain = rospy.get_param("~PIain_head")
-        self.pid_head_DGain = rospy.get_param("~PDain_head")
+        self.pid_head_IGain = rospy.get_param("~IGain_head")
+        self.pid_head_DGain = rospy.get_param("~DGain_head")
 
         # Setup PID controller
-        self.pid_track = PIDController(pid_track_PGain, pid_track_IGain, pid_track_DGain)
-        self.pid_head = PIDController(pid_head_PGain, pid_head_IGain, pid_head_DGain)
+        self.pid_track = PIDController(self.pid_track_PGain, self.pid_track_IGain, self.pid_track_DGain)
+        self.pid_head = PIDController(self.pid_head_PGain, self.pid_head_IGain, self.pid_head_DGain)
 
         # Save the name of the node
         self.node_name = rospy.get_name()
@@ -35,11 +38,12 @@ class ccd_control_node(object):
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("~car_cmd",Twist2DStamped, queue_size=1)
         # Setup subscriber
-        self.sub_pose = rospy.Subscriber("/Robo/ccd_filter_node/pose", CCD_pose, self.cdPose)
+        self.sub_pose = rospy.Subscriber("/Robo/ccd_filter_node/pose", CCD_pose, self.cbPose)
+        self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
-        # Create a timer that calls the cdPub function every 1.0 second
-        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cdPub)
+        # Create a timer that calls the cbPub function every 1.0 second
+        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbPub)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -49,13 +53,21 @@ class ccd_control_node(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
-    def cdPose(self,msg):
-        self.d = msg.d
+    def cbSwitch(self, msg):
+        self.active = msg.data
+
+    def cbPose(self,msg):
+        if self.active == False:
+            return
+            
+        self.cdSwitchd = msg.d
         self.phi = msg.phi
         rospy.loginfo("[%s] Pose: (d: %s, phi: %s)" %(self.node_name,msg.d, msg.phi))
-        #self.cdPub()
+        #self.cbPub()
 
-    def cdPub(self, event):
+    def cbPub(self, event):
+        if self.active == False:
+            return
         # calculate error
         corss_track_error = self.d - self.d_offset
         heading_error = self.phi
@@ -71,7 +83,7 @@ class ccd_control_node(object):
         # Publish control message
         car_cmd_msg = Twist2DStamped()
         car_cmd_msg.header.stamp = rospy.Time.now()
-        car_cmd_msg.v = v
+        car_cmd_msg.v_x = v
         car_cmd_msg.omega = omega
         self.pub_car_cmd.publish(car_cmd_msg)
 

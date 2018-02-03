@@ -4,7 +4,7 @@ import rospy
 from std_msgs.msg import String #Imports msg
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from robocon_msgs.msg import Joy6channel
+from robocon_msgs.msg import Joy6channel, BoolStamped
 
 class JoyMapperNode(object):
     def __init__(self):
@@ -16,6 +16,7 @@ class JoyMapperNode(object):
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("~car_cmd",Twist, queue_size=1)
         self.pub_joystick = rospy.Publisher("~joy_data", Joy6channel, queue_size=1)
+        self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
         # Read parameters
@@ -61,7 +62,20 @@ class JoyMapperNode(object):
         self.pub_joystick.publish(joystick_cmd)
 
     def processButtons(self, joy_msg):
-        
+        # joystick override False button
+        if joy_msg.buttons[7] == True:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = False
+            self.pub_buttons.publish(joy_override_msg)
+
+        # joystick override True button
+        if joy_msg.buttons[6] == True:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = True
+            self.pub_buttons.publish(joy_override_msg)
+
         return
 
     def on_shutdown(self):
