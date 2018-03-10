@@ -11,11 +11,11 @@ import struct
 
 class CCD(Frame):
     def __init__(self, master=None):
-        Frame.__init__(self, master, width=720, height=500)
-        self.pack()
-        self.initFig()
+        #Frame.__init__(self, master, width=720, height=500)
+        #self.pack()
+        #self.initFig()
         self.line = []
-        self._test()
+        #self._test()
         # 0:idle -- 1:original -- 2:binary -- 3: threshold -- 4: center -- 5:indicator -- 6:finish -- 0
         self.state = 0
         self.select = 0
@@ -23,6 +23,7 @@ class CCD(Frame):
         self.initThread()
         
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
+        baudrate = 230400
         self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
         #self.worker = threading.Thread(target=self.read)
         #self.worker.setDaemon(True)
@@ -101,6 +102,20 @@ class CCD(Frame):
         self.center_4.pack(side=TOP)
         self.canvas_4.grid(row=5, column=0)
         #self.canvas_4.pack(fill=BOTH)
+
+    def read_debug(self):
+        data_list = []
+        while(True):
+            if len(data_list) < 6:
+                try:
+                    msg = self.ser.read()
+                    msg = struct.unpack('B', msg)[0]
+                    data_list.append(msg)
+                except:
+                    return [128, 128, 128, 128, 128, 128]
+            else:
+                print (data_list)
+                return data_list
 
     def read(self):
         while(True):

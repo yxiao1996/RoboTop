@@ -91,10 +91,14 @@ class serial_encoder_node(object):
             raise Exception("Serial Protocol not matched!")
 
         # Write data to serial port
-        rospy.loginfo("*************************************************")
+        rospy.loginfo("*************************************************")        
+        # Then send joystick data
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
             rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+        # To meet the protocal send 12 zeros
+        # for i in range(12):
+        #     self.encoder.write(0)
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))

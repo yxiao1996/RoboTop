@@ -3,5 +3,6 @@
         <arg name="fsm" value="true"/>
         <arg name="joystick" value="true"/>
         <arg name="encoder" value="false"/>
+	    <arg name="decoder" value="false"/>
     </include>
 </launch>

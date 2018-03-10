@@ -28,6 +28,8 @@ add_message_files(
   CCD_pose.msg
   Twist2DStamped.msg
   Joy6channel.msg
+  viz_odom_rot.msg
+  viz_odom_tran.msg
 )
 
 

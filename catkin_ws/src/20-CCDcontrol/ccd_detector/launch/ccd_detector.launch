@@ -1,0 +1,8 @@
+<launch>
+	<node name="ccd_detector" pkg="ccd_detector" type="ccd_detector_node.py" output="screen">
+		<!-- Setup parameters -->
+		<param name="~pub_timestep" value="0.5"/>
+		<!-- Remapping topics -->
+		<remap from="~image_raw" to="/duckiebot/camera1/image_raw"/>
+	</node>
+</launch>

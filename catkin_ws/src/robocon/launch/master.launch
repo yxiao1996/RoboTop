@@ -11,11 +11,13 @@
     <arg name="joystick" default="true"/>
     <arg name="encoder" default="true"/>
     <arg name="decoder" default="true"/>
-    <arg name="ccd" default="true"/>
+    <arg name="ccd" default="false"/>
+    <arg name="viz_odom" default="false"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">
         <include file="$(find usb_cam)/launch/usb_cam-test.launch">
+            
         </include>
     </group>
 
@@ -65,5 +67,10 @@
         <!-- Publications -->
 
         <!-- Subscriptions -->
+    </group>
+
+    <!-- Start Visual Odometry -->
+    <group if="$(arg viz_odom)">
+        <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen"/>
     </group>
 </launch>

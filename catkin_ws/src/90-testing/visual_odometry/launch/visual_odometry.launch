@@ -1,0 +1,10 @@
+<launch>
+    <include file="$(find robocon)/launch/master.launch">
+        <arg name="fsm" value="false"/>
+        <arg name="joystick" value="false"/>
+        <arg name="encoder" value="false"/>
+	      <arg name="decoder" value="false"/>
+        <arg name="camera" value="true"/>
+        <arg name="viz_odom" value="true"/>
+    </include>
+</launch>
