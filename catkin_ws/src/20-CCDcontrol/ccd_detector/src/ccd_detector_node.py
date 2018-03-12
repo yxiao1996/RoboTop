@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from std_msgs.msg import String #Imports msg
+from std_msgs.msg import Float64
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
@@ -17,16 +17,16 @@ class ccd_detector_node(object):
         self.bridge = CvBridge()
         self.state = "init"
         self.active = True
-        self.plot_detect = True
+        self.plot_detect = False
 
         # Setup publishers
-        self.pub_topic_a = rospy.Publisher("~topic_a",String, queue_size=1)
+        self.pub_centroid = rospy.Publisher("/line_centroid", Float64, queue_size=1)
         # Setup subscriber
         self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImage, queue_size=1)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
-        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.processImg)
+        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.processImg)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -41,8 +41,9 @@ class ccd_detector_node(object):
             return
         self.rgb = self.bridge.imgmsg_to_cv2(msg, "rgb8")
         self.state = "default"
+        self.processImg()
 
-    def processImg(self,event):
+    def processImg(self):
         if not self.active:
             return
         if self.state == "init":
@@ -75,7 +76,7 @@ class ccd_detector_node(object):
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
         else:
-            cX = 320
+            cX = 319
             cY = 100
         cv2.circle(bi_img, (cX, cY), 7, (255, 0, 0), -1)
         
@@ -83,8 +84,9 @@ class ccd_detector_node(object):
             cv2.imshow("centroid", bi_img)
             cv2.waitKey(1)
         
-
-        
+        line_centroid_msg = Float64()
+        line_centroid_msg.data = cX
+        self.pub_centroid.publish(line_centroid_msg)
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))

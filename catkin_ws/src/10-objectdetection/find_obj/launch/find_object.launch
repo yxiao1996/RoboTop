@@ -1,0 +1,43 @@
+<launch>
+    <!-->
+    <node name="ccd_pid" pkg="pid" type="controller" output="screen" >
+      <param name="Kp" value="0.1" />
+      <param name="Ki" value="0.0" />
+      <param name="Kd" value="0.1" />
+      <param name="upper_limit" value="10" />
+      <param name="lower_limit" value="-10" />
+      <param name="windup_limit" value="10" />
+      <param name="cutoff_frequency" value="20" />
+      <param name="max_loop_frequency" value="105.0" />
+      <param name="min_loop_frequency" value="95.0" />
+     </node>
+    -->
+    
+    <!--<node name="servo_sim_node" pkg="pid" type="plant_sim" output="screen" >
+      <param name="plant_order" value="2" />
+    </node>-->
+
+    <!--<node name="ccd_pid_server_node" pkg="ccd_control" type="ccd_pid_server.py" output="screen">
+      
+    </node>-->
+
+    <!--<node name="ccd_detector_node" pkg="ccd_detector" type="ccd_detector_node.py" output="screen">
+      <remap from="~image_raw" to="/duckiebot/camera1/image_raw"/>
+    </node>-->
+    <node name="find_obj_node" pkg="find_obj" type="find_object_node.py" output="screen">
+    
+    </node>
+
+    <node name="find_object_2d" pkg="find_object_2d" type="find_object_2d" output="screen">
+		<remap from="image" to="/duckiebot/camera1/image_raw"/>
+		<param name="gui" value="true" type="bool"/>
+		<param name="session_path" value="/home/yxiao1996/workspace/RoboTop/catkin_ws/src/sim/detect_session/beer.bin" type="str"/>
+	</node>
+    <!-- rqt_plot is a resource hog, so if you're seeing high CPU usage, don't launch rqt_plot  -->
+    <!--<node name="rqt_plot" pkg="rqt_plot" type="rqt_plot"
+    args="/control_effort/data /state/data /setpoint/data" />-->
+
+    <!--<node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />-->
+
+    <!--<node name="rqt_robot_monitor" pkg="rqt_robot_monitor" type="rqt_robot_monitor" />-->
+</launch>
