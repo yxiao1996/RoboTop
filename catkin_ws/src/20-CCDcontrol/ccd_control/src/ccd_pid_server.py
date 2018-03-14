@@ -15,9 +15,11 @@ class ccd_control_node(object):
         # set state buffer
         self.active = True
         self.p_only = True
-        self.Kp = 0.1
+        if self.p_only:
+            self.r = rospy.Rate(10)
+        self.Kp = -0.1
 
-        self.v_bar = 0.5
+        self.v_bar = 0.1
 
         # Save the name of the node
         self.node_name = rospy.get_name()
@@ -31,8 +33,8 @@ class ccd_control_node(object):
         self.pub_state = rospy.Publisher("/state", Float64, queue_size=1)
 
         # Setup subscriber
-        self.sub_control = rospy.Subscriber("/control_effort", Float64, self.cbControl)
-        self.sub_ccd = rospy.Subscriber("/line_centroid", Float64, self.cbUpdate)
+        self.sub_control = rospy.Subscriber("/control_effort", Float64, self.cbControl, queue_size=1)
+        self.sub_ccd = rospy.Subscriber("/line_centroid", Float64, self.cbUpdate, queue_size=1)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -49,8 +51,15 @@ class ccd_control_node(object):
         if self.p_only:
             # Simple p control
             cur_state = float(msg.data)
-            control_effort = self.Kp * (cur_state - 320.0) / 100
+            
+            # image width:640, 320 is middle line
+            control_effort = self.Kp * (cur_state - 320.0) / 50.0
+            if abs(cur_state - 320.0) > 10:
+                self.v_bar = 0.0
+            else:
+                self.v_bar = 0.1
             self.Pubsim(control_effort)
+            self.r.sleep()
             return
 
         # use pid node    

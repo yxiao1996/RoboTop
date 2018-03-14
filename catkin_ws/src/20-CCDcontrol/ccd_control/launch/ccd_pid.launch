@@ -23,6 +23,7 @@
 
     <node name="ccd_detector_node" pkg="ccd_detector" type="ccd_detector_node.py" output="screen">
       <remap from="~image_raw" to="/duckiebot/camera1/image_raw"/>
+      <remap from="~image_compressed" to="/duckiebot/camera1/image_raw/compressed"/>
     </node>
 
     <!-- rqt_plot is a resource hog, so if you're seeing high CPU usage, don't launch rqt_plot  -->
