@@ -15,6 +15,7 @@
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
       <robotBaseFrame>chassis</robotBaseFrame>
+      <broadcastTF>true</broadcastTF> 
     </plugin>
   </gazebo>
 

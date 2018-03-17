@@ -3,16 +3,21 @@
 
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find duckiebot_description)/urdf/duckiebot.xacro'"/>
 
-  <!-- send fake joint values -->
+  <!-- send fake joint values-->
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+
     <param name="use_gui" value="False"/>
   </node>
 
   <!-- Combine joint values -->
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher">
+    <param name="publish_frequency" type="double" value="20.0" />
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="odom_map_broadcaster" args="0 0 0 0 0 0 /map /odom 100" />
 
   <!-- Show in Rviz   -->
-  <node name="rviz" pkg="rviz" type="rviz"/>
+  <!--<node name="rviz" pkg="rviz" type="rviz"/>-->
   <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find mybot_description)/launch/myrobot.rviz"/-->
 
 </launch>
