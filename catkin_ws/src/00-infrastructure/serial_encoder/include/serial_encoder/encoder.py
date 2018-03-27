@@ -5,6 +5,7 @@ class SerialEncoder():
         self.initThread()
 
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
+        #baudrate = 230400
         self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
         
         # Debug

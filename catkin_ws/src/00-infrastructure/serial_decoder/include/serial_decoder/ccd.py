@@ -23,7 +23,7 @@ class CCD(Frame):
         self.initThread()
         
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
-        baudrate = 230400
+        #baudrate = 230400
         self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
         #self.worker = threading.Thread(target=self.read)
         #self.worker.setDaemon(True)
@@ -115,6 +115,7 @@ class CCD(Frame):
                     return [128, 128, 128, 128, 128, 128]
             else:
                 print (data_list)
+                #time.sleep(0.5)
                 return data_list
 
     def read(self):
@@ -244,7 +245,10 @@ class CCD(Frame):
         self.plot(test_arr, 4, True)
 
 if __name__ == '__main__':
-    root = Tk()
-    root.title("CCD Helper")
-    ccd = CCD(root)
-    ccd.mainloop()
+    #root = Tk()
+    #root.title("CCD Helper")
+    #ccd = CCD(root)
+    ccd = CCD()
+    #ccd.mainloop()
+    while(1):
+        print (ccd.read_debug())

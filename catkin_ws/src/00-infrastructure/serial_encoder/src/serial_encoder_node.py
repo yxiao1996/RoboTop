@@ -3,22 +3,28 @@ import rospy
 from std_msgs.msg import String #Imports msg
 from serial_encoder.encoder import SerialEncoder as Encoder
 from serial_encoder.translater import translate, translateCTLtoJoy
-from Tkinter import *
 from robocon_msgs.msg import CCD_data, Twist2DStamped, Joy6channel, BoolStamped
 import numpy as np
+import matplotlib.pyplot as plt 
+import plot
 
 class serial_encoder_node(object):
     def __init__(self):
-        # Init Decoder
-        #root = Tk()
-        #root.title("CCD Helper")
+        # Init Eecoder
         self.encoder = Encoder()
         self.protocol = rospy.get_param("~serial_protocol")
         self.joystick_state = True
 
         # setup frequency
-        self.frequency = 500.0
+        self.frequency = 5.0
+        self.Rate = rospy.Rate(self.frequency)
+        self.display_every = 3
+        self.display_buffer = 0
     
+        # display figure
+        self.display_init = False
+        #self.fig, self.axes = plt.subplots(6, 1)
+
         # setup timer
         self.start_time = rospy.Time.now()
 
@@ -31,13 +37,13 @@ class serial_encoder_node(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Setup subscriber
-        self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData)
-        self.sub_ctl_data = rospy.Subscriber("~ctl_data", Twist2DStamped, self.cbCtlData)
+        self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData, queue_size=1)
+        self.sub_ctl_data = rospy.Subscriber("~ctl_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
         # Create a timer that calls the process function every 1.0 second
-        # self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbprocess)
+        #self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbDisplay)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -71,7 +77,7 @@ class serial_encoder_node(object):
             self.encoder.write(datum)
             rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
 
-    def cbJoyData(self,msg):
+    def cbJoyData(self,msg, plot_everything=True):
         # Check fsm state: joystick control
         if self.joystick_state != True:
             return
@@ -90,20 +96,41 @@ class serial_encoder_node(object):
             print "length protocol: ", len(self.protocol)
             raise Exception("Serial Protocol not matched!")
 
+        # Display
+        if plot_everything:
+            self.display(data_list)
+
         # Write data to serial port
         rospy.loginfo("*************************************************")        
         # Then send joystick data
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
-            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            if self.display_buffer == self.display_every - 1:
+                rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+
+        self.display_buffer = (self.display_buffer + 1) % self.display_every
         # To meet the protocal send 12 zeros
         # for i in range(12):
         #     self.encoder.write(0)
 
+        self.Rate.sleep()
+
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
 
-    def translate(slef, msg):
+    def display(self, data_list):
+        # plot everything using bars
+        if self.display_init == False:
+            self.fig, self.axes = plt.subplots(6, 1)
+            self.display_init = True
+        bars = []
+        for datum in data_list:
+            bar = plot.gen_bar(datum)
+            bars.append(bar)
+        plot.plot_bar(bars, self.axes)
+        plt.pause(0.000001)
+
+    def translate(self, msg):
         data_list = list()
         return
 

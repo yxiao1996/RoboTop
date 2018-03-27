@@ -6,6 +6,8 @@ from Tkinter import *
 from robocon_msgs.msg import CCD_data, Joy6channel
 from sensor_msgs.msg import Joy
 import numpy as np
+import matplotlib.pyplot as plt
+import plot
 
 class ccd_decoder_node(object):
     def __init__(self):
@@ -16,6 +18,8 @@ class ccd_decoder_node(object):
         
         # setup frequency
         self.frequency = 500.0
+        self.plot_debug = True
+        self.display_init = False
 
         # setup timer
         self.start_time = rospy.Time.now()
@@ -34,7 +38,7 @@ class ccd_decoder_node(object):
         # Setup subscriber
         #self.sub_topic_b = rospy.Subscriber("~topic_b", String, self.cbTopic)
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",0.005)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
         # Create a timer that calls the process function every 1.0 second
         # self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbprocess)
         self.debug_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbdebug)
@@ -49,8 +53,11 @@ class ccd_decoder_node(object):
     #def cbTopic(self,msg):
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
 
-    def cbdebug(self, event):
+    def cbdebug(self, event, plot_everything=True):
         data_list = self.decoder.read_debug()
+        print data_list
+        if plot_everything:
+            self.display(data_list)
         joy_msg = Joy()        
         debug_0 = float(data_list[0]) / 128.0 - 1.0
         debug_1 = float(data_list[1]) / 128.0 - 1.0
@@ -84,6 +91,18 @@ class ccd_decoder_node(object):
             self.pub_ccd_msg.publish(self.ccd_msg)
         else:
             self.select += 1
+
+    def display(self, data_list):
+        # plot everything using bars
+        if self.display_init == False:
+            self.fig, self.axes = plt.subplots(6, 1)
+            self.display_init = True
+        bars = []
+        for datum in data_list:
+            bar = plot.gen_bar(datum)
+            bars.append(bar)
+        plot.plot_bar(bars, self.axes, display_encoder=False)
+        plt.pause(0.000001)
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
