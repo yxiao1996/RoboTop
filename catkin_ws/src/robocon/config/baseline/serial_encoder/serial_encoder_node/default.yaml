@@ -5,3 +5,5 @@ serial_protocol:
    - "channel_3"
    - "button_0"
    - "button_1"
+baudrate: 115200
+update_frequency: 5

@@ -10,7 +10,7 @@ import threading
 import struct
 
 class CCD(Frame):
-    def __init__(self, master=None):
+    def __init__(self, baudrate, master=None):
         #Frame.__init__(self, master, width=720, height=500)
         #self.pack()
         #self.initFig()
@@ -20,7 +20,7 @@ class CCD(Frame):
         self.state = 0
         self.select = 0
         self.update_flag = 0
-        self.initThread()
+        self.initThread(baudrate=baudrate)
         
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
         #baudrate = 230400

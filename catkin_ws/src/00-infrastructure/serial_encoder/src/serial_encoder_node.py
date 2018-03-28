@@ -11,12 +11,13 @@ import plot
 class serial_encoder_node(object):
     def __init__(self):
         # Init Eecoder
-        self.encoder = Encoder()
         self.protocol = rospy.get_param("~serial_protocol")
+        self.baudrate = rospy.get_param("~baudrate")
+        self.encoder = Encoder(self.baudrate)
         self.joystick_state = True
 
         # setup frequency
-        self.frequency = 5.0
+        self.frequency = rospy.get_param("~update_frequency")
         self.Rate = rospy.Rate(self.frequency)
         self.display_every = 3
         self.display_buffer = 0
@@ -35,6 +36,7 @@ class serial_encoder_node(object):
         self.node_name = rospy.get_name()
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
+        rospy.loginfo("[%s]: baudrate: [%s]" %(self.node_name, self.baudrate))
 
         # Setup subscriber
         self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData, queue_size=1)
@@ -67,7 +69,7 @@ class serial_encoder_node(object):
                                       msg.omega)
         
         # Check protocol
-        if len(data_list) != 4:
+        if len(data_list) != 6:
             print "length data list: ", len(data_list)
             raise Exception("Serial Protocol not matched!")
         
@@ -77,7 +79,7 @@ class serial_encoder_node(object):
             self.encoder.write(datum)
             rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
 
-    def cbJoyData(self,msg, plot_everything=True):
+    def cbJoyData(self,msg, plot_everything=False):
         # Check fsm state: joystick control
         if self.joystick_state != True:
             return

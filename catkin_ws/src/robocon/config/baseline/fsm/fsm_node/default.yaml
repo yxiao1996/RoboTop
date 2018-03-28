@@ -19,6 +19,7 @@ nodes:
   ccd_filter_node: "ccd_filter_node/switch"
   ccd_control_node: "ccd_control_node/switch"
   encoder_node_js: "serial_encoder_node/switch"
+  odo_control_node: "odo_control_node/switch"
 
 states:
   JOYSTICK_CONTROL:
@@ -31,4 +32,4 @@ states:
     active_nodes:
     - ccd_filter_node
     - ccd_control_node
-      
+    - odo_control_node

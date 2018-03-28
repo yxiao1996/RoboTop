@@ -51,6 +51,8 @@ def translateCTLtoJoy(v_x, v_y, omega, phi=0):
     data_list.append(np.uint8(channel_1 * 255))
     data_list.append(np.uint8(channel_2 * 255))
     data_list.append(np.uint8(channel_3 * 255))
+    data_list.append(int(0))
+    data_list.append(int(1))
 
     return data_list
 

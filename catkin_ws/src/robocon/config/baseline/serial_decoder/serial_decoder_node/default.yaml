@@ -1,0 +1,7 @@
+baudrate: 115200
+total_length: 10
+data_length: [6, 0, 4]
+data_order: ["verify", "ccd", "odo"]
+verify_switch: False
+ccd_switch: True
+odo_switch: True

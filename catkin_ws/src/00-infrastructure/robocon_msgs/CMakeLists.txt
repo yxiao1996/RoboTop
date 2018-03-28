@@ -30,6 +30,7 @@ add_message_files(
   Joy6channel.msg
   viz_odom_rot.msg
   viz_odom_tran.msg
+  Pose2DStamped.msg
 )
 
 

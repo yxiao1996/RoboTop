@@ -1,23 +1,32 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String #Imports msg
-from serial_decoder.ccd import CCD as Decoder
+#from serial_decoder.ccd import CCD as Decoder
+from serial_decoder.decoder import Decoder
 from Tkinter import *
-from robocon_msgs.msg import CCD_data, Joy6channel
+from robocon_msgs.msg import CCD_data, Joy6channel, Pose2DStamped
 from sensor_msgs.msg import Joy
+from nav_msgs.msg import Odometry
 import numpy as np
 import matplotlib.pyplot as plt
 import plot
 
-class ccd_decoder_node(object):
+class decoder_node(object):
     def __init__(self):
         # Init Decoder
-        #root = Tk()
-        #root.title("CCD Helper")
-        self.decoder = Decoder()
+        self.baudrate = rospy.get_param("~baudrate")
+        self.decoder = Decoder(self.baudrate)
         
+        # Set decoder protocol
+        self.total_length = rospy.get_param("~total_length")
+        self.data_length = rospy.get_param("~data_length")
+        self.data_order = rospy.get_param("~data_order")
+        self.verify_switch = rospy.get_param("~verify_switch")
+        self.ccd_switch = rospy.get_param("~ccd_switch")
+        self.odo_switch = rospy.get_param("~odo_switch")
+
         # setup frequency
-        self.frequency = 500.0
+        self.frequency = 50.0
         self.plot_debug = True
         self.display_init = False
 
@@ -31,8 +40,10 @@ class ccd_decoder_node(object):
         self.node_name = rospy.get_name()
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
+        rospy.loginfo("[%s]: baudrate: [%s]" %(self.node_name, self.baudrate))
 
         # Setup publishers
+        self.pub_odo_msg = rospy.Publisher("~odo_msg", Pose2DStamped, queue_size=1)
         self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_data, queue_size=1)
         self.pub_debug = rospy.Publisher("~debug", Joy, queue_size=1)
         # Setup subscriber
@@ -53,24 +64,12 @@ class ccd_decoder_node(object):
     #def cbTopic(self,msg):
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
 
-    def cbdebug(self, event, plot_everything=True):
-        data_list = self.decoder.read_debug()
-        print data_list
-        if plot_everything:
-            self.display(data_list)
-        joy_msg = Joy()        
-        debug_0 = float(data_list[0]) / 128.0 - 1.0
-        debug_1 = float(data_list[1]) / 128.0 - 1.0
-        debug_2 = float(data_list[2]) / 128.0 - 1.0
-        debug_3 = float(data_list[3]) / 128.0 - 1.0
-        for i in range(8):
-            joy_msg.axes.append(0)
-        joy_msg.axes[4] = debug_0
-        joy_msg.axes[3] = debug_1
-        rospy.loginfo("**************************************************")
-        rospy.loginfo("[%s] ch 0: [%s] ch 1: [%s]" %(self.node_name, debug_0, debug_1))
-        rospy.loginfo("[%s] ch 2: [%s] ch 3: [%s]" %(self.node_name, debug_2, debug_3))
-        self.pub_debug.publish(joy_msg)
+    def cbdebug(self, event):
+        # Read data list from serial port
+        data_list = self.decoder.read_debug(self.total_length)
+
+        # Parse and process data
+        self.parse_data(data_list)
 
     def cbprocess(self,event):
         
@@ -104,15 +103,83 @@ class ccd_decoder_node(object):
         plot.plot_bar(bars, self.axes, display_encoder=False)
         plt.pause(0.000001)
 
+    def parse_data(self, data_list):
+        segment_1 = data_list[0 : self.data_length[0]]
+        segment_2 = data_list[self.data_length[0] : self.data_length[0]+self.data_length[1]]
+        segment_3 = data_list[self.data_length[0]+self.data_length[1] : self.total_length]
+        data_segments = [segment_1, segment_2, segment_3]
+
+        # Parse data list
+        for i, segment in enumerate(data_segments):
+            if self.data_order[i] == "verify":
+                self.verify(segment)
+            if self.data_order[i] == "ccd":
+                self.ccd_process(segment)
+            if self.data_order[i] == "odo":
+                self.odo_process(segment)
+    
+    def verify(self, data_list, plot_everything=False):
+        if not self.verify_switch:
+            return
+
+        if len(data_list) > 0:
+            print data_list
+        # Display
+        if plot_everything:
+            self.display(data_list)
+
+        # Debug message
+        joy_msg = Joy()        
+        debug_0 = float(data_list[0]) / 128.0 - 1.0
+        debug_1 = float(data_list[1]) / 128.0 - 1.0
+        debug_2 = float(data_list[2]) / 128.0 - 1.0
+        debug_3 = float(data_list[3]) / 128.0 - 1.0
+        for i in range(8):
+            joy_msg.axes.append(0)
+        joy_msg.axes[4] = debug_0
+        joy_msg.axes[3] = debug_1
+        rospy.loginfo("**************************************************")
+        rospy.loginfo("[%s] ch 0: [%s] ch 1: [%s]" %(self.node_name, debug_0, debug_1))
+        rospy.loginfo("[%s] ch 2: [%s] ch 3: [%s]" %(self.node_name, debug_2, debug_3))
+        self.pub_debug.publish(joy_msg)
+
+        return
+
+    def ccd_process(self, data):
+        if not self.ccd_switch:
+            return
+        #if len(data) > 0:
+            #print data
+        # Decode CCD data
+        pose_x = 0.0
+        pose_y = 0.0
+        pose_theta = 0.0
+
+        # Publish pose data
+        pose_msg = Pose2DStamped()
+        pose_msg.header.stamp = rospy.Time.now()
+        pose_msg.x = pose_x
+        pose_msg.y = pose_y
+        pose_msg.theta = pose_theta
+        self.pub_odo_msg.publish(pose_msg)
+
+    def odo_process(self, data):
+        if not self.odo_switch:
+            return
+        #if len(data) > 0:
+            #print data
+        # Decode odometry data
+        return
+
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
 
 if __name__ == '__main__':
     # Initialize the node with rospy
-    rospy.init_node('ccd_decoder_node', anonymous=False)
+    rospy.init_node('decoder_node', anonymous=False)
 
     # Create the NodeName object
-    node = ccd_decoder_node()
+    node = decoder_node()
 
     # Setup proper shutdown behavior 
     rospy.on_shutdown(node.on_shutdown)

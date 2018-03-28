@@ -12,6 +12,8 @@
     <arg name="encoder" default="true"/>
     <arg name="decoder" default="true"/>
     <arg name="ccd" default="false"/>
+    <arg name="ccd/ccd_detector" default="false"/>
+    <arg name="odo" default="true"/>
     <arg name="viz_odom" default="false"/>
 
     <!-- Start Camera-->
@@ -41,23 +43,39 @@
         <node ns="$(arg veh)" pkg="serial_encoder" type="serial_encoder_node.py" name="serial_encoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_encoder/serial_encoder_node/$(arg param_file_name).yaml"/>
             <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
-            <remap from="/Robo/serial_encoder_node/ctl_data" to="/Robo/ccd_control_node/car_cmd"/>
+            <remap from="/Robo/serial_encoder_node/ctl_data" to="/Robo/odo_control_node/twist2d"/>
         </node>
     </group>
 
     <!-- Start Serial Port Decoder -->
     <group if="$(arg decoder)">
-        <node ns="$(arg veh)" pkg="serial_decoder" type="serial_decoder_node.py" name="serial_decoder_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="serial_decoder" type="serial_decoder_node.py" name="serial_decoder_node" output="screen">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_decoder/serial_decoder_node/$(arg param_file_name).yaml"/>
+        </node>
     </group>
 
     <!-- Start CCD control -->
-    <group if="$(arg ccd)">        
+    <group if="$(arg ccd)">
+        <group if="$(arg ccd/ccd_detector)">
+            <node name="ccd_detector" pkg="ccd_detector" type="ccd_detector_node.py" output="screen">
+            <remap from="~image_raw" to="/duckiebot/camera1/image_raw"/>
+            </node> 
+        </group> 
+
         <node ns="$(arg veh)" pkg="ccd_filter" type="ccd_filter_node.py" name="ccd_filter_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_filter_node/$(arg param_file_name).yaml"/>
             <remap from="/Robo/ccd_filter_node/ccd_msg" to="/Robo/serial_decoder_node/ccd_msg"/>
         </node>
+
         <node ns="$(arg veh)" pkg="ccd_control" type="ccd_control_node.py" name="ccd_control_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/CCD/ccd_control_node/$(arg param_file_name).yaml"/>
+        </node>
+    </group>
+
+    <!-- Start Odometry control -->
+    <group if="$(arg odo)">
+        <node ns="$(arg veh)" pkg="odo_control" type="odo_control_node.py" name="odo_control_node" output="screen">
+            <remap from="/Robo/odo_control_node/pose" to="/Robo/serial_decoder_node/odo_msg"/>
         </node>
     </group>
 

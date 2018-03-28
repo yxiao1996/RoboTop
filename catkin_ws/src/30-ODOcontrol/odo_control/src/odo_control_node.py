@@ -3,9 +3,10 @@ import rospy
 import math
 import tf
 import numpy as np
-from std_msgs.msg import String #Imports msg
+from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist
+from robocon_msgs.msg import BoolStamped, Pose2DStamped, Twist2DStamped
 """
 msg:
 geometry_msgs/PoseWithCovariance pose
@@ -21,6 +22,9 @@ class odo_control_node(object):
         self.node_name = rospy.get_name()
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
+
+        # set state buffer
+        self.active = False
 
         # Initialize buffers
         self.x = 0
@@ -40,10 +44,13 @@ class odo_control_node(object):
         self.rate = rospy.Rate(5)
 
         # Setup publishers
-        self.pub_car_cmd = rospy.Publisher("/cmd_vel",Twist, queue_size=1)
+        self.pub_car_cmd = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+        self.pub_twist = rospy.Publisher("~twist2d", Twist2DStamped, queue_size=1)
         # Setup subscriber
         self.sub_goal = rospy.Subscriber("/goal", Pose2D, self.cbGoal, queue_size=1)
         self.sub_odometry = rospy.Subscriber("/odom", Odometry, self.cbOdom, queue_size=1)
+        self.sub_pose = rospy.Subscriber("~pose", Pose2DStamped, self.cbPose, queue_size=1)
+        self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
 
@@ -55,7 +62,19 @@ class odo_control_node(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbSwitch(self, msg):
+        self.active = msg.data
+
     def cbOdom(self,msg):
+        if self.active == False:
+            return
+
+        debug = True
+
+        if debug:
+            rospy.loginfo("[%s] Hello!!" %(self.node_name))
+            return
+            
         # For a simple implementation, only take pose in account
         cur_pose = msg.pose.pose
         self.x = cur_pose.position.x
@@ -100,6 +119,20 @@ class odo_control_node(object):
             self.pub_car_cmd.publish(car_cmd)
         
         #self.rate.sleep()
+
+    def cbPose(self, msg, plot_pose=True):
+        if self.active == False:
+            return
+        if plot_pose:
+            rospy.loginfo("[%s]: X: %s, Y: %s, Theta: %s" %(self.node_name, msg.x, msg.y, msg.theta))
+
+        # Publish car command
+        twist_msg = Twist2DStamped()
+        twist_msg.header.stamp = rospy.Time.now()
+        twist_msg.v_x = 0.0
+        twist_msg.v_y = 0.0
+        twist_msg.omega = 0.0
+        self.pub_twist.publish(twist_msg)
 
     def cbGoal(self, msg):
         # Retrive goal from message

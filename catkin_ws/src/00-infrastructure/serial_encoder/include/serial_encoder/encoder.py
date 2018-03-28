@@ -1,8 +1,8 @@
 import serial
 
 class SerialEncoder():
-    def __init__(self):
-        self.initThread()
+    def __init__(self, baudrate):
+        self.initThread(baudrate=baudrate)
 
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
         #baudrate = 230400
