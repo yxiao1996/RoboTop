@@ -3,8 +3,9 @@
         <arg name="fsm" value="true"/>
         <arg name="camera" value="false"/>
         <arg name="joystick" value="true"/>
-        <arg name="encoder" value="true"/>
-	<arg name="decoder" value="true"/>
-        <!--<arg name="/ccd/ccd_detector" value="true"/>-->
+        <arg name="odo" value="true"/>
+        <arg name="encoder" value="false"/>
+	    <arg name="decoder" value="false"/>
+        <!--<arg name="/ccd/ccd_detector" value="false"/>-->
     </include>
 </launch>

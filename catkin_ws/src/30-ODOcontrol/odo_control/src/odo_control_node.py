@@ -66,6 +66,7 @@ class odo_control_node(object):
         self.active = msg.data
 
     def cbOdom(self,msg):
+        # Callback for simulation odometry
         if self.active == False:
             return
 
@@ -121,17 +122,56 @@ class odo_control_node(object):
         #self.rate.sleep()
 
     def cbPose(self, msg, plot_pose=True):
+        # Callback for pose message from decoder node
         if self.active == False:
             return
         if plot_pose:
             rospy.loginfo("[%s]: X: %s, Y: %s, Theta: %s" %(self.node_name, msg.x, msg.y, msg.theta))
 
+        # Extract data from message
+        time_stamp = msg.header.stamp
+        x = msg.x
+        y = msg.y
+        theta = msg.theta
+        #print x, y, theta
+
+        # Generate control effort
+        # error
+        error_x = x - self.x_goal
+        error_y = y - self.y_goal
+        # for simplicity, use sign control, will add fuzzy controller
+        if error_x > 0.0:
+            v_x = -0.2
+        else:
+            if error_x < 0.0:
+                v_x = 0.2
+            else:
+                v_x = 0.0
+        
+        if error_y > 0.0:
+            v_y = -0.2
+        else:
+            if error_y < 0.0:
+                v_y = 0.2
+            else:
+                v_y = 0.0
+        # Maintain the same frame with odometry
+        if abs(theta) < 5.0:
+            omega = 0.0
+        else:
+            v_x = 0.0
+            v_y = 0.0
+            if theta > 0:
+                omega = -0.1
+            else:
+                omega = 0.1
+
         # Publish car command
         twist_msg = Twist2DStamped()
         twist_msg.header.stamp = rospy.Time.now()
-        twist_msg.v_x = 0.0
-        twist_msg.v_y = 0.0
-        twist_msg.omega = 0.0
+        twist_msg.v_x = v_x
+        twist_msg.v_y = v_y
+        twist_msg.omega = omega
         self.pub_twist.publish(twist_msg)
 
     def cbGoal(self, msg):
@@ -142,6 +182,9 @@ class odo_control_node(object):
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
+
+    def sigmoid(self, x):
+        return 1 / (1 + math.exp(-x))
 
 if __name__ == '__main__':
     # Initialize the node with rospy

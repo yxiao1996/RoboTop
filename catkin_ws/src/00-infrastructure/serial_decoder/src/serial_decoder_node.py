@@ -7,9 +7,45 @@ from Tkinter import *
 from robocon_msgs.msg import CCD_data, Joy6channel, Pose2DStamped
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseStamped
 import numpy as np
 import matplotlib.pyplot as plt
 import plot
+import struct
+
+"""
+odometry
+child_frame_id
+Header header
+string child_frame_id
+geometry_msgs/PoseWithCovariance pose
+geometry_msgs/TwistWithCovariance twist
+
+Pose pose
+
+# Row-major representation of the 6x6 covariance matrix
+# The orientation parameters use a fixed-axis representation.
+# In order, the parameters are:
+# (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+float64[36] covariance
+
+Twist twist
+
+# Row-major representation of the 6x6 covariance matrix
+# The orientation parameters use a fixed-axis representation.
+# In order, the parameters are:
+# (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+float64[36] covariance
+
+# A representation of pose in free space, composed of position and orientation. 
+Point position
+Quaternion orientation
+
+# This expresses velocity in free space broken into its linear and angular parts.
+Vector3  linear
+Vector3  angular
+
+"""
 
 class decoder_node(object):
     def __init__(self):
@@ -26,7 +62,8 @@ class decoder_node(object):
         self.odo_switch = rospy.get_param("~odo_switch")
 
         # setup frequency
-        self.frequency = 50.0
+        self.frequency = 5.0
+        self.Rate = rospy.Rate(self.frequency)
         self.plot_debug = True
         self.display_init = False
 
@@ -44,6 +81,7 @@ class decoder_node(object):
 
         # Setup publishers
         self.pub_odo_msg = rospy.Publisher("~odo_msg", Pose2DStamped, queue_size=1)
+        self.pub_odo_debug = rospy.Publisher("~odo_debug", PoseStamped, queue_size=1)
         self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_data, queue_size=1)
         self.pub_debug = rospy.Publisher("~debug", Joy, queue_size=1)
         # Setup subscriber
@@ -117,6 +155,8 @@ class decoder_node(object):
                 self.ccd_process(segment)
             if self.data_order[i] == "odo":
                 self.odo_process(segment)
+        
+        # self.Rate.sleep()
     
     def verify(self, data_list, plot_everything=False):
         if not self.verify_switch:
@@ -169,7 +209,46 @@ class decoder_node(object):
         #if len(data) > 0:
             #print data
         # Decode odometry data
-        return
+        data_pre = data[0:2]
+        data_post = data[-2:]
+        odom_data = data[2]
+        
+        try:
+            # Check header and tail of each data segment
+            if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
+                print struct.unpack('B', data_pre[0]), struct.unpack('B', data_pre[1])
+                return
+            if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
+                return
+
+            rawValue = []
+            for i in range(len(odom_data) / 4):
+                neg_raw = odom_data[i*4:(i+1)*4]
+                pos_raw = neg_raw[::-1]
+                raw = struct.unpack('f', "".join(neg_raw))[0]
+                rawValue.append(raw)
+
+            #print "%10.4f, %10.4f, %10.4f" % (rawValue[3], rawValue[4], rawValue[0]) 
+            
+            debug = True
+            if debug:
+                # Publish debug message
+                odo_debug = PoseStamped()
+                odo_debug.header.stamp = rospy.Time.now()
+                odo_debug.header.frame_id = '0'
+                odo_debug.pose.position.x = rawValue[3]
+                odo_debug.pose.position.y = rawValue[4]
+                self.pub_odo_debug.publish(odo_debug)
+
+            # Publish message to odometry controller
+            odo_msg = Pose2DStamped()
+            odo_msg.x = rawValue[3]
+            odo_msg.y = rawValue[4]
+            odo_msg.theta = rawValue[0]
+            odo_msg.header.stamp = rospy.Time.now()
+            self.pub_odo_msg.publish(odo_msg)
+        except: 
+            return
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))

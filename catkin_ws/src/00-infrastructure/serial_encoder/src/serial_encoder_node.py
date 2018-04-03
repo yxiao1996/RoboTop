@@ -58,7 +58,7 @@ class serial_encoder_node(object):
     def cbState(self, msg):
         self.joystick_state = msg.data
 
-    def cbCtlData(self, msg):
+    def cbCtlData(self, msg, plot_everything=False):
         # check fsm state:
         if self.joystick_state == True:
             return
@@ -66,18 +66,27 @@ class serial_encoder_node(object):
         # Translate data from Twisted2D to Joy6channel
         data_list = translateCTLtoJoy(msg.v_x,
                                       msg.v_y,
-                                      msg.omega)
+                                      msg.omega,
+                                      0.0,   # Temp set phi, button1, button2 to zero
+                                      0.0,
+                                      0.0)
         
         # Check protocol
         if len(data_list) != 6:
             print "length data list: ", len(data_list)
             raise Exception("Serial Protocol not matched!")
+
+        # Display
+        if plot_everything:
+            self.display(data_list)
         
         # Write data to serial port
         rospy.loginfo("*************************************************")
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
             rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+        self.encoder.write(13)
+        self.encoder.write(10)
 
     def cbJoyData(self,msg, plot_everything=False):
         # Check fsm state: joystick control
@@ -109,7 +118,8 @@ class serial_encoder_node(object):
             self.encoder.write(datum)
             if self.display_buffer == self.display_every - 1:
                 rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
-
+        self.encoder.write(13)
+        self.encoder.write(10)
         self.display_buffer = (self.display_buffer + 1) % self.display_every
         # To meet the protocal send 12 zeros
         # for i in range(12):

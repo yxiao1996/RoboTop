@@ -17,19 +17,65 @@ class Decoder():
         self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
 
     def read_debug(self, length=6):
+        self.ser.flushInput()
+        #msg = self.ser.read(length)
+        #return msg
         data_list = []
+        while(True):
+            #if len(data_list) < length:
+            msg = self.ser.read()
+            data = struct.unpack('B', msg)[0]
+            if data != 13:
+                continue
+            else:
+                #print "*"
+                data_list.append(msg)
+                msg = self.ser.read()
+                data = struct.unpack('B', msg)[0]
+                msg = self.ser.read()
+                data = struct.unpack('B', msg)[0]
+                if data != 10:
+                    continue
+                else:
+                    #print "**"
+                    data_list.append(msg)
+                    msg = self.ser.read(length-4)
+                    data_list.append(msg)
+                    msg = self.ser.read()
+                    data = struct.unpack('B', msg)[0]
+                    #print data
+                    if data != 10:
+                        continue
+                    else:
+                        #print "***"
+                        data_list.append(msg)
+                        msg = self.ser.read(1)
+                        data = struct.unpack('B', msg)[0]
+                        if data != 13:
+                            continue
+                        else:
+                            #print "****"
+                            data_list.append(msg)
+                            return data_list
+
+
+        msg = self.ser.read(length)
+        return msg
         while(True):
             if len(data_list) < length:
                 try:
                     msg = self.ser.read()
-                    msg = struct.unpack('B', msg)[0]
+                    #msg = struct.unpack('B', msg)[0]
                     data_list.append(msg)
                 except:
                     fake_data = []
-                    for i in range(length):
-                        fake_data.append(0)
+                    for i in range(length/4):
+                        fake_data.append('A')
+                        fake_data.append('D')
+                        fake_data.append('D')
+                        fake_data.append('A')
                     return fake_data
             else:
-                print (data_list)
+                #print (data_list)
                 #time.sleep(0.5)
                 return data_list

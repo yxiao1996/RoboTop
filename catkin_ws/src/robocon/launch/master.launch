@@ -13,7 +13,7 @@
     <arg name="decoder" default="true"/>
     <arg name="ccd" default="false"/>
     <arg name="ccd/ccd_detector" default="false"/>
-    <arg name="odo" default="true"/>
+    <arg name="odo" default="false"/>
     <arg name="viz_odom" default="false"/>
 
     <!-- Start Camera-->
