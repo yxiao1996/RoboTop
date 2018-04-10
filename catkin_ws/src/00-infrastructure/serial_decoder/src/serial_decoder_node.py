@@ -228,7 +228,7 @@ class decoder_node(object):
                 raw = struct.unpack('f', "".join(neg_raw))[0]
                 rawValue.append(raw)
 
-            #print "%10.4f, %10.4f, %10.4f" % (rawValue[3], rawValue[4], rawValue[0]) 
+            print "%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]) 
             
             debug = True
             if debug:
@@ -242,7 +242,7 @@ class decoder_node(object):
 
             # Publish message to odometry controller
             odo_msg = Pose2DStamped()
-            odo_msg.x = rawValue[3]
+            odo_msg.x = -rawValue[3]
             odo_msg.y = rawValue[4]
             odo_msg.theta = rawValue[0]
             odo_msg.header.stamp = rospy.Time.now()

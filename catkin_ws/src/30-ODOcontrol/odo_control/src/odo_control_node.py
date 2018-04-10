@@ -3,6 +3,7 @@ import rospy
 import math
 import tf
 import numpy as np
+from fuzzy_controllers import OmegaControl
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist
@@ -27,13 +28,13 @@ class odo_control_node(object):
         self.active = False
 
         # Initialize buffers
-        self.x = 0
-        self.y = 0
-        self.theta = 0
+        self.x = 0.0
+        self.y = 0.0
+        self.theta = 0.0
 
-        self.x_goal = 0
-        self.y_goal = 0
-        self.theta_goal = 0
+        self.x_goal = 0.0
+        self.y_goal = 0.0
+        self.theta_goal = 0.0
 
         # Initialize constants
         self.theta_thresh = 0.1
@@ -46,6 +47,7 @@ class odo_control_node(object):
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.pub_twist = rospy.Publisher("~twist2d", Twist2DStamped, queue_size=1)
+        self.pub_reach = rospy.Publisher("~reach_goal", BoolStamped, queue_size=1)
         # Setup subscriber
         self.sub_goal = rospy.Subscriber("/goal", Pose2D, self.cbGoal, queue_size=1)
         self.sub_odometry = rospy.Subscriber("/odom", Odometry, self.cbOdom, queue_size=1)
@@ -140,21 +142,72 @@ class odo_control_node(object):
         error_x = x - self.x_goal
         error_y = y - self.y_goal
         # for simplicity, use sign control, will add fuzzy controller
-        if error_x > 0.0:
-            v_x = -0.2
-        else:
-            if error_x < 0.0:
-                v_x = 0.2
+        sign_control = False
+        if sign_control:
+            if error_x > 0.0:
+                v_x = -0.2
             else:
+                if error_x < 0.0:
+                    v_x = 0.2
+                else:
+                    v_x = 0.0
+            
+            if error_y > 0.0:
+                v_y = -0.2
+            else:
+                if error_y < 0.0:
+                    v_y = 0.2
+                else:
+                    v_y = 0.0
+        sigmoid_p_control = True
+        sigmoid_scalar = 2000.0
+        dead_zone = 20.0
+        if sigmoid_p_control:
+            print "*"
+            res_error_x = error_x / sigmoid_scalar
+            res_error_y = error_y / sigmoid_scalar
+            """
+            if error_x > dead_zone:
+                try:
+                    v_x = -self.sigmoid(res_error_x)
+                except:
+                    v_x = 0.0
+            else:
+                if error_x < -dead_zone:
+                    try:
+                        v_x = self.sigmoid(res_error_x)
+                    except:
+                        v_x = 0.0
+                else:
+                    v_x = 0.0
+            if error_y > dead_zone:
+                try:
+                    v_y = -self.sigmoid(res_error_y)
+                except:
+                    v_y = 0.0
+            else:
+                if error_y < -dead_zone:
+                    try:
+                        v_y = self.sigmoid(res_error_y)
+                    except:
+                        v_y = 0.0
+                else:
+                    v_y = 0.0
+            """
+            res_deadzone = 0.005
+            res_distance = math.sqrt(res_error_x**2 + res_error_y**2)
+            if res_distance < res_deadzone:
                 v_x = 0.0
-        
-        if error_y > 0.0:
-            v_y = -0.2
-        else:
-            if error_y < 0.0:
-                v_y = 0.2
-            else:
                 v_y = 0.0
+                reach_msg = BoolStamped()
+                reach_msg.header.stamp = rospy.Time.now()
+                reach_msg.data = True
+                self.pub_reach.publish(reach_msg)
+            else:
+                control_effort = self.sigmoid(res_distance)
+                v_x = -control_effort * (res_error_x / res_distance)
+                v_y = -control_effort * (res_error_y / res_distance)
+
         # Maintain the same frame with odometry
         if abs(theta) < 5.0:
             omega = 0.0
@@ -165,6 +218,20 @@ class odo_control_node(object):
                 omega = -0.1
             else:
                 omega = 0.1
+        # fuzzy controller
+        use_fuzzy = True
+        if use_fuzzy:
+            if abs(theta) < 5.0:
+                omega = 0.0
+            else:
+                v_x = 0.0
+                v_y = 0.0
+                fuzzy_system = OmegaControl()
+                omega_ctl = fuzzy_system.getController()
+                omega_ctl.input['theta_error'] = theta / 180.0
+                omega_ctl.compute()
+                omega = omega_ctl.output['out_omega']
+                omega = omega / 2.0
 
         # Publish car command
         twist_msg = Twist2DStamped()

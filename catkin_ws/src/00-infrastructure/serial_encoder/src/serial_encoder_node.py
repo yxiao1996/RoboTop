@@ -40,7 +40,8 @@ class serial_encoder_node(object):
 
         # Setup subscriber
         self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData, queue_size=1)
-        self.sub_ctl_data = rospy.Subscriber("~ctl_data", Twist2DStamped, self.cbCtlData, queue_size=1)
+        self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtlData, queue_size=1)
+        self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
@@ -64,9 +65,9 @@ class serial_encoder_node(object):
             return
         
         # Translate data from Twisted2D to Joy6channel
-        data_list = translateCTLtoJoy(msg.v_x,
-                                      msg.v_y,
-                                      msg.omega,
+        data_list = translateCTLtoJoy(msg.v_x/4.0,
+                                      msg.v_y/4.0,
+                                      msg.omega/4.0,
                                       0.0,   # Temp set phi, button1, button2 to zero
                                       0.0,
                                       0.0)
@@ -94,10 +95,10 @@ class serial_encoder_node(object):
             return
 
         # translate data
-        data_list = translate(msg.channel_0,
-                              msg.channel_1,
-                              msg.channel_2,
-                              msg.channel_3,
+        data_list = translate(msg.channel_0/5.0,
+                              -msg.channel_1/5.0,
+                              msg.channel_2/5.0,
+                              msg.channel_3/5.0,
                               msg.button_0,
                               msg.button_1)
         

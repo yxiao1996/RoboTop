@@ -43,7 +43,8 @@
         <node ns="$(arg veh)" pkg="serial_encoder" type="serial_encoder_node.py" name="serial_encoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_encoder/serial_encoder_node/$(arg param_file_name).yaml"/>
             <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
-            <remap from="/Robo/serial_encoder_node/ctl_data" to="/Robo/odo_control_node/twist2d"/>
+            <remap from="/Robo/serial_encoder_node/odo_data" to="/Robo/odo_control_node/twist2d"/>
+            <remap from="/Robo/serial_encoder_node/pid_data" to="/Robo/pid_control_node/twist2d"/>
         </node>
     </group>
 
@@ -77,6 +78,10 @@
         <node ns="$(arg veh)" pkg="odo_control" type="odo_control_node.py" name="odo_control_node" output="screen">
             <remap from="/Robo/odo_control_node/pose" to="/Robo/serial_decoder_node/odo_msg"/>
         </node>
+        <node ns="$(arg veh)" pkg="pid_control" type="pid_control_node.py" name="pid_control_node" output="screen">
+            <remap from="/Robo/pid_control_node/pose" to="/Robo/serial_decoder_node/odo_msg"/>
+        </node>
+        <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
     </group>
 
     <!-- Start Object Detector-->

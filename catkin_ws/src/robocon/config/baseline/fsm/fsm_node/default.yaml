@@ -10,6 +10,10 @@ events:
     topic: "joy_mapper_node/joystick_override"
     msg_type: "BoolStamped"
     trigger: False
+  reach_goal:
+    topic: "odo_control_node/reach_goal"
+    msg_type: "BoolStamped"
+    trigger: True
 
 global_transitions:
   joystick_override_on: "JOYSTICK_CONTROL"
@@ -19,6 +23,7 @@ nodes:
   ccd_filter_node: "ccd_filter_node/switch"
   ccd_control_node: "ccd_control_node/switch"
   encoder_node_js: "serial_encoder_node/switch"
+  pid_control_node: "pid_control_node/switch"
   odo_control_node: "odo_control_node/switch"
 
 states:
@@ -29,7 +34,12 @@ states:
     - detecter_node
     - encoder_node_js
   LINE_FOLLOWING:
+    transitions:
+      reach_goal: "AT_GOAL"
     active_nodes:
     - ccd_filter_node
     - ccd_control_node
     - odo_control_node
+  AT_GOAL:
+    active_nodes:
+    - pid_control_node
