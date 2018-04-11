@@ -31,6 +31,7 @@ add_message_files(
   viz_odom_rot.msg
   viz_odom_tran.msg
   Pose2DStamped.msg
+  Pose2DList.msg
 )
 
 

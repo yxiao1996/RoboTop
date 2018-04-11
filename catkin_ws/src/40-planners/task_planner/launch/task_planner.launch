@@ -1,0 +1,29 @@
+<launch>
+	<arg name="veh" default="Robo" doc="Name of vehicle. ex: megaman"/>
+    <arg name="config" default="baseline" doc="Specify a config."/>
+    <arg name="param_file_name" default="default"/>
+
+	<node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
+            <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
+    </node>
+
+	<node ns="$(arg veh)" name="task_planner_node" pkg="task_planner" type="task_planner_node.py" output="screen">
+        <remap from="/Robo/task_planner_node/confirm_path" to="/Robo/path_planner_node/confirm"/>
+        <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
+    </node>
+
+	<node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">
+        <remap from="/Robo/path_planner_node/reach_goal" to="/Robo/odo_control_node/reach_goal"/>
+        <remap from="/Robo/path_planner_node/set_path" to="/Robo/task_planner_node/set_path"/>
+    </node>
+
+    <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
+        <remap from="/Robo/move_planner_node/set_move" to="/Robo/task_planner_node/set_move"/>
+    </node>
+
+	<node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen"/>
+    
+    <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
+        <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
+    </node>
+</launch>

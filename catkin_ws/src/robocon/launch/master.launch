@@ -16,6 +16,8 @@
     <arg name="odo" default="false"/>
     <arg name="viz_odom" default="false"/>
 
+    <arg name="planner" default="true"/>
+
     <!-- Start Camera-->
     <group if="$(arg camera)">
         <include file="$(find usb_cam)/launch/usb_cam-test.launch">
@@ -27,6 +29,22 @@
     <group if="$(arg fsm)">    
         <node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
+        </node>
+    </group>
+
+    <group if="$(arg planner)"> 
+        <node ns="$(arg veh)" name="task_planner_node" pkg="task_planner" type="task_planner_node.py" output="screen">
+            <remap from="/Robo/task_planner_node/confirm_path" to="/Robo/path_planner_node/confirm"/>
+            <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
+        </node>
+
+        <node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">
+            <remap from="/Robo/path_planner_node/reach_goal" to="/Robo/odo_control_node/reach_goal"/>
+            <remap from="/Robo/path_planner_node/set_path" to="/Robo/task_planner_node/set_path"/>
+        </node>
+
+        <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
+            <remap from="/Robo/move_planner_node/set_move" to="/Robo/task_planner_node/set_move"/>
         </node>
     </group>
 
@@ -75,13 +93,22 @@
 
     <!-- Start Odometry control -->
     <group if="$(arg odo)">
+        <!-->
+        <node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">
+            <remap from="/Robo/path_planner_node/reach_goal" to="/Robo/odo_control_node/reach_goal"/>
+        </node>
+        <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
+        </node>
+        -->
         <node ns="$(arg veh)" pkg="odo_control" type="odo_control_node.py" name="odo_control_node" output="screen">
             <remap from="/Robo/odo_control_node/pose" to="/Robo/serial_decoder_node/odo_msg"/>
+            <remap from="/Robo/odo_control_node/goal" to="/Robo/path_planner_node/goal"/>
         </node>
         <node ns="$(arg veh)" pkg="pid_control" type="pid_control_node.py" name="pid_control_node" output="screen">
-            <remap from="/Robo/pid_control_node/pose" to="/Robo/serial_decoder_node/odo_msg"/>
+            <remap from="/Robo/pid_control_node/cur_pos_update" to="/Robo/serial_decoder_node/odo_msg"/>
+            <remap from="/Robo/pid_control_node/ref_pos_update" to="/Robo/path_planner_node/goal"/>
         </node>
-        <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+        <!--<node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />-->
     </group>
 
     <!-- Start Object Detector-->

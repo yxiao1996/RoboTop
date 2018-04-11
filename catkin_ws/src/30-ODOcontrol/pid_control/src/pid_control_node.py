@@ -34,7 +34,7 @@ class PIDcontrolnode(object):
         self.aim_pos_y = 0.0
         self.aim_pos_theta = 0.0
         # PID parameters
-        self.kp = 0.001
+        self.kp = -0.01
         self.ki = 0.0
         self.kd = 0.0
         self.intg_len = 100#actual time length based on position refresh rate
@@ -107,8 +107,8 @@ class PIDcontrolnode(object):
 
         
     def setAimPos(self,msg):
-        if self.active == False:
-            return
+        #if self.active == False:
+        #    return
         self.aim_pos_x = msg.x
         self.aim_pos_y = msg.y
         self.aim_pos_theta = msg.theta
