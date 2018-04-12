@@ -17,7 +17,7 @@ class MovePlanner(object):
         self.move = self.moves.pop()
 
         # Setup publishers
-        self.pub_move = rospy.Publisher("~move",Pose2DStamped, queue_size=1)
+        self.pub_move = rospy.Publisher("~move",String, queue_size=1)
         self.pub_finish = rospy.Publisher("~finish", BoolStamped, queue_size=1)
         self.pub_set_confirm = rospy.Publisher("~confirm", BoolStamped, queue_size=1)
 
@@ -41,6 +41,8 @@ class MovePlanner(object):
 
     def cbSwitch(self, msg):
         self.active = msg.data
+        if self.active:
+            self.publishMove()
 
     def cbSetMove(self, msg):
         # Convert move from message
@@ -54,6 +56,18 @@ class MovePlanner(object):
         conf_msg.header.stamp = rospy.Time.now()
         self.pub_set_confirm.publish(conf_msg)
 
+    def publishMove(self):
+        # Publish confirm message to task planner
+        conf_msg = BoolStamped()
+        conf_msg.header.stamp = rospy.Time.now()
+        conf_msg.data = True
+        self.pub_finish.publish(conf_msg)
+        # Publish move message
+        move_msg = String()
+        move_msg.data = self.move
+        self.pub_move.publish(move_msg)
+        rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
+        
     def cbNextmove(self,msg):
         if not self.active:
             return

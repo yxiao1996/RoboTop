@@ -11,22 +11,33 @@ class task_planner_node(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Task buffer
-        self.Task = {}
-        self.current_task = {'path': [(0.0, 0.0, 0.0), (1000.0, 0.0, 0.0), (1000.0, 1000.0, 0.0), (0.0, 1000.0, 0.0)],
-                             'move': 'sleep'}
+        self.Task = [{'path': [(0.0, 0.0,  0.0)],
+                      'move': 'sleepforever'},
+                     {'path': [(1000.0, 1000.0, 0.0), (0.0, 1000.0, 0.0), (1000.0, 0.0, 0.0)],
+                      'move': 'sleep'},
+                     {'path': [(2000.0, 1000.0, 0.0), (2000.0, 0.0, 0.0), (1000.0, 0.0, 0.0)],
+                      'move': 'sleep'}]
+        self.current_task = self.Task.pop()
+        self.default_task = {'path': [(0.0, 0.0,  0.0)],
+                             'move': 'sleepforever'}
 
         # Status buffer
         self.active = False
         self.path_ready = False
         self.move_ready = False
+        self.path_finish = False
+        self.move_finish = False
 
         # Setup publishers
+        self.pub_confrim = rospy.Publisher("~confirm", BoolStamped, queue_size=1)
         self.pub_finish = rospy.Publisher("~finish", BoolStamped, queue_size=1)
         self.pub_set_path = rospy.Publisher("~set_path", Pose2DList, queue_size=1)
         self.pub_set_move = rospy.Publisher("~set_move", String, queue_size=1)
         # Setup subscriber
         self.sub_confirm_path = rospy.Subscriber("~confirm_path", BoolStamped, self.cbConfPath)
         self.sub_confirm_move = rospy.Subscriber("~confirm_move", BoolStamped, self.cbConfMove)
+        self.sub_finish_path = rospy.Subscriber("~finish_path", BoolStamped, self.cbFinishPath)
+        self.sub_finish_move = rospy.Subscriber("~finish_move", BoolStamped, self.cbFinishMove)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
@@ -52,7 +63,7 @@ class task_planner_node(object):
         rospy.loginfo("[%s] move setting success" %(self.node_name))
         self.move_ready = True
         if self.path_ready and self.move_ready:
-            self.pub_finish_msg()
+            self.pub_confrim_msg()
 
     def cbConfPath(self,msg):
         # Confirm set path
@@ -60,14 +71,51 @@ class task_planner_node(object):
         rospy.loginfo("[%s] path setting success" %(self.node_name))
         self.path_ready = True
         if self.move_ready and self.path_ready:
-            self.pub_finish_msg()
+            self.pub_confrim_msg()
 
-    def pub_finish_msg(self):
+    def cbFinishMove(self, msg):
+        # Confirm finish move
+        self.move_finish = msg.data
+        rospy.loginfo("[%s] move finished" %(self.node_name))
+        self.move_finish = True
+        if self.move_finish and self.path_finish:
+            self.next_task()
+
+    def cbFinishPath(self, msg):
+        # Confirm finish move
+        self.path_finish = msg.data
+        rospy.loginfo("[%s] path finished" %(self.node_name))
+        self.path_finish = True
+        if self.move_finish and self.path_finish:
+            self.next_task()        
+
+    def next_task(self):
+        # Pop next task
+        try:
+            self.current_task = self.Task.pop()
+            rospy.loginfo("[%s] pop next task" %(self.node_name))
+            # Publish finish message
+            finish_msg = BoolStamped()
+            finish_msg.header.stamp = rospy.Time.now()
+            finish_msg.data = True
+            self.pub_finish.publish(finish_msg)
+        except:
+            # Publish finish message
+            finish_msg = BoolStamped()
+            finish_msg.header.stamp = rospy.Time.now()
+            finish_msg.data = True
+            self.pub_finish.publish(finish_msg)
+            debug = True
+            if debug:
+                self.current_task = self.default_task
+                rospy.loginfo("[%s] pop default task" %(self.node_name))
+
+    def pub_confrim_msg(self):
         # Finish planning, set fsm to next state
         finish_msg = BoolStamped()
         finish_msg.header.stamp = rospy.Time.now()
         finish_msg.data = True
-        self.pub_finish.publish(finish_msg)
+        self.pub_confrim.publish(finish_msg)
         # set status buffer
         self.move_ready = False
         self.path_ready = False

@@ -112,7 +112,7 @@ class PIDcontrolnode(object):
         self.aim_pos_x = msg.x
         self.aim_pos_y = msg.y
         self.aim_pos_theta = msg.theta
-        rospy.loginfo("Aim position has updated as:\n x=%5.4f, y=%5.4f, theta=%5.4f" %(msg.x,msg.y,msg.theta))
+        #rospy.loginfo("Aim position has updated as:\n x=%5.4f, y=%5.4f, theta=%5.4f" %(msg.x,msg.y,msg.theta))
 
     def cbTimer(self,event):
         if self.active == False:

@@ -172,34 +172,6 @@ class odo_control_node(object):
             print "*"
             res_error_x = error_x / sigmoid_scalar
             res_error_y = error_y / sigmoid_scalar
-            """
-            if error_x > dead_zone:
-                try:
-                    v_x = -self.sigmoid(res_error_x)
-                except:
-                    v_x = 0.0
-            else:
-                if error_x < -dead_zone:
-                    try:
-                        v_x = self.sigmoid(res_error_x)
-                    except:
-                        v_x = 0.0
-                else:
-                    v_x = 0.0
-            if error_y > dead_zone:
-                try:
-                    v_y = -self.sigmoid(res_error_y)
-                except:
-                    v_y = 0.0
-            else:
-                if error_y < -dead_zone:
-                    try:
-                        v_y = self.sigmoid(res_error_y)
-                    except:
-                        v_y = 0.0
-                else:
-                    v_y = 0.0
-            """
             res_deadzone = 0.05
             res_distance = math.sqrt(res_error_x**2 + res_error_y**2)
             #trigger = False

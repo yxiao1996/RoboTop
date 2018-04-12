@@ -13,12 +13,17 @@ events:
     trigger: False
 
   planning_complete:
-    topic: "task_planner_node/finish"
+    topic: "task_planner_node/confirm"
     msg_type: "BoolStamped"
     trigger: True
 
   reach_dest:
     topic: "path_planner_node/reach_dest"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  task_finish:
+    topic: "task_planner_node/finish"
     msg_type: "BoolStamped"
     trigger: True
 
@@ -59,6 +64,8 @@ states:
     - odo_control_node
     - path_planner_node
   AT_GOAL:
+    transitions:
+      task_finish: "PLANNING"
     active_nodes:
     - pid_control_node
     - move_planner_node
