@@ -17,6 +17,8 @@ class task_planner_node(object):
                       'move': 'sleep'},
                      {'path': [(2000.0, 1000.0, 0.0), (2000.0, 0.0, 0.0), (1000.0, 0.0, 0.0)],
                       'move': 'sleep'}]
+        self.macro_tasks = rospy.get_param("~macro_tasks")
+        print self.macro_tasks
         self.current_task = self.Task.pop()
         self.default_task = {'path': [(0.0, 0.0,  0.0)],
                              'move': 'sleepforever'}

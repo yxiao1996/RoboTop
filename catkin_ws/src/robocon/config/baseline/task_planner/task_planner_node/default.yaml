@@ -1,0 +1,28 @@
+macro_tasks:
+  macro_task_0:
+    task_0: 
+      path:
+        - [1000.0, 0.0, 0.0]
+        - [0.0, 1000.0, 0.0]
+      move:
+        "sleep"
+    task_1: 
+      path:
+        - [0.0, 0.0, 0.0]
+        - [1000.0, 1000.0, 0.0]
+      move:
+        "sleep"
+  
+  macro_task_1:
+    task_0: 
+      path:
+        - [0.0, 1000.0, 0.0]
+        - [1000.0, 0.0, 0.0]
+      move:
+        "sleep"
+    task_1: 
+      path:
+        - [0.0, 0.0, 0.0]
+        - [1000.0, 1000.0, 0.0]
+      move:
+        "sleep"

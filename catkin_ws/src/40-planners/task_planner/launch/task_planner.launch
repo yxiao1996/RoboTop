@@ -4,10 +4,11 @@
     <arg name="param_file_name" default="default"/>
 
 	<node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
-            <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
+        <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
     </node>
 
 	<node ns="$(arg veh)" name="task_planner_node" pkg="task_planner" type="task_planner_node.py" output="screen">
+        <rosparam command="load" file="$(find robocon)/config/$(arg config)/task_planner/task_planner_node/$(arg param_file_name).yaml"/>
         <remap from="/Robo/task_planner_node/confirm_path" to="/Robo/path_planner_node/confirm"/>
         <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
     </node>
