@@ -38,7 +38,7 @@ class odo_control_node(object):
         self.theta_goal = 0.0
 
         # Initialize constants
-        self.theta_thresh = 0.1
+        self.theta_thresh = 3.0
         self.omega = 0.2
         self.v_bar = 0.6
 
@@ -124,11 +124,9 @@ class odo_control_node(object):
         
         #self.rate.sleep()
 
-    def cbPose(self, msg, plot_pose=False):
+    def cbPose(self, msg, plot_pose=True):
         # Callback for pose message from decoder node
         if self.active == False:
-            return
-        if self.trigger == True:
             return
         if plot_pose:
             rospy.loginfo("[%s]: X: %s, Y: %s, Theta: %s" %(self.node_name, msg.x, msg.y, msg.theta))
@@ -147,6 +145,15 @@ class odo_control_node(object):
         # error
         error_x = x - self.x_goal
         error_y = y - self.y_goal
+
+        # Check at goal
+        if abs(theta) < self.theta_thresh:
+            if abs(error_x) < 50.0 and abs(error_y) < 50.0:
+                reach_msg = BoolStamped()
+                reach_msg.header.stamp = rospy.Time.now()
+                reach_msg.data = True
+                self.pub_reach.publish(reach_msg)
+                self.active = False
         # for simplicity, use sign control, will add fuzzy controller
         sign_control = False
         if sign_control:
@@ -178,14 +185,6 @@ class odo_control_node(object):
             if res_distance < res_deadzone:
                 v_x = 0.0
                 v_y = 0.0
-                #if self.trigger == True:
-                #    return
-                #else:
-                reach_msg = BoolStamped()
-                reach_msg.header.stamp = rospy.Time.now()
-                reach_msg.data = True
-                self.pub_reach.publish(reach_msg)
-                self.trigger = True
             else:
                 #self.trigger = False
                 control_effort = self.sigmoid(res_distance)
@@ -193,19 +192,21 @@ class odo_control_node(object):
                 v_y = -control_effort * (res_error_y / res_distance)
 
         # Maintain the same frame with odometry
-        if abs(theta) < 5.0:
-            omega = 0.0
-        else:
-            v_x = 0.0
-            v_y = 0.0
-            if theta > 0:
-                omega = -0.1
+        simple_omega = True
+        if simple_omega:
+            if abs(theta) <self.theta_thresh:
+                omega = 0.0
             else:
-                omega = 0.1
+                v_x = 0.0
+                v_y = 0.0
+                if theta > 0:
+                    omega = -0.1
+                else:
+                    omega = 0.1
         # fuzzy controller
-        use_fuzzy = True
+        use_fuzzy = False
         if use_fuzzy:
-            if abs(theta) < 5.0:
+            if abs(theta) < self.theta_thresh:
                 omega = 0.0
             else:
                 v_x = 0.0

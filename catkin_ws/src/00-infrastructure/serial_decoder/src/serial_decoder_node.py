@@ -72,6 +72,7 @@ class decoder_node(object):
 
         self.select = 0
         self.ccd_msg = CCD_data()
+        self.odo_buffer = [0.0, 0.0, 0.0]
 
         # Save the name of the node
         self.node_name = rospy.get_name()
@@ -230,7 +231,23 @@ class decoder_node(object):
 
             print "%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]) 
             
-            debug = True
+            # Data check
+            x = -rawValue[3]
+            y = rawValue[4]
+            theta = rawValue[0]
+            try:
+                delta_x = x - self.odo_buffer[0]
+                self.odo_buffer[0] = x
+                delta_y = y - self.odo_buffer[1]
+                self.odo_buffer[0] = y
+                delta_theta = theta - self.odo_buffer[2]
+                self.odo_buffer[0] = theta
+                if delta_x > 100 or delta_y > 100 or delta_theta > 30:
+                    return
+            except:
+                return
+
+            debug = False
             if debug:
                 # Publish debug message
                 odo_debug = PoseStamped()

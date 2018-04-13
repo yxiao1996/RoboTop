@@ -53,8 +53,8 @@ states:
       planning_complete: "LINE_FOLLOWING"
     active_nodes:
     - task_planner_node
-    - move_planner_node
-    - path_planner_node
+    #- move_planner_node
+    #- path_planner_node
   LINE_FOLLOWING:
     transitions:
       reach_dest: "AT_GOAL"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import String #Imports msg
-from robocon_msgs.msg import BoolStamped, Pose2DStamped, Pose2DList
+from robocon_msgs.msg import BoolStamped, Pose2DStamped, Pose2DList, FSMState
 
 class PathPlanner(object):
     def __init__(self):
@@ -9,6 +9,9 @@ class PathPlanner(object):
         self.node_name = rospy.get_name()
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
+
+        self.active = False
+        self.fsm_state = "JOYSTICK_CONTROL"
 
         # Path buffer
         self.path = [(0.0, 0.0, 0.0), (1000.0, 0.0, 0.0), (1000.0, 1000.0, 0.0), (0.0, 1000.0, 0.0)]
@@ -23,10 +26,11 @@ class PathPlanner(object):
         # Setup subscriber
         self.sub_reach_goal = rospy.Subscriber("~reach_goal", BoolStamped, self.cbNextGoal)
         self.sub_set_path = rospy.Subscriber("~set_path", Pose2DList, self.cbSetPath)
+        self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
-        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
+        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -35,6 +39,15 @@ class PathPlanner(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbSwitch(self, msg):
+        self.active = msg.data
+        goal_msg = Pose2DStamped()
+        goal_msg.header.stamp = rospy.Time.now()
+        goal_msg.x = self.goal[0]
+        goal_msg.y = self.goal[1]
+        goal_msg.theta = self.goal[2]
+        self.pub_goal.publish(goal_msg)
 
     def cbSetPath(self, msg):
         # Convert path from message
@@ -75,15 +88,6 @@ class PathPlanner(object):
                 reach_msg.header.stamp = rospy.Time.now()
                 reach_msg.data = True
                 self.pub_reach_dest.publish(reach_msg)
-
-    def cbTimer(self,event):
-        # Set a timer to publish goal
-        goal_msg = Pose2DStamped()
-        goal_msg.header.stamp = rospy.Time.now()
-        goal_msg.x = self.goal[0]
-        goal_msg.y = self.goal[1]
-        goal_msg.theta = self.goal[2]
-        self.pub_goal.publish(goal_msg)
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
