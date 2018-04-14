@@ -65,9 +65,9 @@ class serial_encoder_node(object):
             return
         
         # Translate data from Twisted2D to Joy6channel
-        data_list = translateCTLtoJoy(msg.v_x/4.0,
-                                      msg.v_y/4.0,
-                                      msg.omega/4.0,
+        data_list = translateCTLtoJoy(msg.v_x/2.0,
+                                      msg.v_y/2.0,
+                                      msg.omega/2.0,
                                       0.0,   # Temp set phi, button1, button2 to zero
                                       0.0,
                                       0.0)
@@ -95,10 +95,10 @@ class serial_encoder_node(object):
             return
 
         # translate data
-        data_list = translate(msg.channel_0/5.0,
-                              -msg.channel_1/5.0,
-                              msg.channel_2/5.0,
-                              msg.channel_3/5.0,
+        data_list = translate(msg.channel_0/3.0,
+                              -msg.channel_1/3.0,
+                              msg.channel_2/3.0,
+                              msg.channel_3/3.0,
                               msg.button_0,
                               msg.button_1)
         

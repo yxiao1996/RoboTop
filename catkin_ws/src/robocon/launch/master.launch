@@ -16,7 +16,7 @@
     <arg name="odo" default="false"/>
     <arg name="viz_odom" default="false"/>
 
-    <arg name="planner" default="true"/>
+    <arg name="planner" default="false"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">

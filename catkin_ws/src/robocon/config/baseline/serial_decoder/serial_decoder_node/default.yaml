@@ -3,5 +3,5 @@ total_length: 28
 data_length: [0, 0, 28]
 data_order: ["verify", "ccd", "odo"]
 verify_switch: False
-ccd_switch: True
+ccd_switch: False
 odo_switch: True

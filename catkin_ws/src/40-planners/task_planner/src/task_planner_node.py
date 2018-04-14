@@ -73,6 +73,7 @@ class task_planner_node(object):
             try:
                 # Try to pop the next macrotask
                 self.macro_task_index += 1
+                self.macro_tasks = rospy.get_param("~macro_tasks")
                 self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
                 self.current_task = self.current_macro_task.pop()
             except:
@@ -80,15 +81,15 @@ class task_planner_node(object):
                 return
         else:
             # else continue precious macro task
-            print self.macro_task_index
+            #print self.macro_task_index
             self.macro_tasks = rospy.get_param("~macro_tasks")
             self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
             self.current_task = self.current_macro_task.pop()
         # Publish finish message to enter planning state
-            finish_msg = BoolStamped()
-            finish_msg.header.stamp = rospy.Time.now()
-            finish_msg.data = True
-            self.pub_finish.publish(finish_msg)
+        finish_msg = BoolStamped()
+        finish_msg.header.stamp = rospy.Time.now()
+        finish_msg.data = True
+        self.pub_finish.publish(finish_msg)
 
     def cbConfMove(self,msg):
         # Confrim set move
