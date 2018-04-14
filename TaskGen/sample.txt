@@ -1,0 +1,12 @@
+sample
+macro
+[500,0,0],   sleep
+[0,500,0],   sleep
+[500,500,0], sleep
+[0,0,0],     sleep
+macro
+[500,0,0],   sleep
+[0,500,0],   sleep
+[500,500,0], sleep
+[0,0,0],     sleep
+macro

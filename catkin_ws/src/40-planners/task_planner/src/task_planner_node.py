@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import copy
 import rospy
 from std_msgs.msg import String, Float64MultiArray#Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DList, Pose2DStamped
@@ -21,7 +22,7 @@ class task_planner_node(object):
         print self.macro_tasks
         #self.current_task = self.Task.pop()
         self.macro_task_index = 0
-        self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))]
+        self.current_macro_task = copy.copy(self.macro_tasks[str('macro_task_' + str(self.macro_task_index))])
         self.current_task = self.current_macro_task.pop()
         self.default_task = {'path': [(0.0, 0.0,  0.0)],
                              'move': 'sleep'}
@@ -64,22 +65,24 @@ class task_planner_node(object):
             self.set_task()
 
     def cbFinishCoord(self, msg):
-        if not self.active:
-            return
+        #if not self.active:
+        #    return
         # Finish coordination switch to next macro task
         if msg.data:
             # I receive positive confirm, switch to next task
             try:
                 # Try to pop the next macrotask
                 self.macro_task_index += 1
-                self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))]
+                self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
                 self.current_task = self.current_macro_task.pop()
             except:
                 # Or its the last task
                 return
         else:
             # else continue precious macro task
-            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))]
+            print self.macro_task_index
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
             self.current_task = self.current_macro_task.pop()
         # Publish finish message to enter planning state
             finish_msg = BoolStamped()
@@ -120,10 +123,13 @@ class task_planner_node(object):
             self.next_task()        
 
     def next_task(self):
+        # Reset switch
+        self.path_finish = False
+        self.move_finish = False
         # Pop next task
         try:
-            #self.current_task = self.Task.pop()
-            self.current_task = self.macro_tasks['macro_task_0'].pop()
+            self.current_task = self.current_macro_task.pop()
+            #self.current_task = self.macro_tasks['macro_task_0'].pop()
             rospy.loginfo("[%s] pop next task" %(self.node_name))
             # Publish finish message
             finish_msg = BoolStamped()

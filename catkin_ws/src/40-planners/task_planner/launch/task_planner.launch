@@ -11,6 +11,8 @@
         <rosparam command="load" file="$(find robocon)/config/$(arg config)/task_planner/task_planner_node/$(arg param_file_name).yaml"/>
         <remap from="/Robo/task_planner_node/confirm_path" to="/Robo/path_planner_node/confirm"/>
         <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
+        <remap from="/Robo/task_planner_node/finish_move" to="/Robo/move_planner_node/finish"/>
+        <remap from="/Robo/task_planner_node/finish_path" to="/Robo/path_planner_node/reach_dest"/>
     </node>
 
 	<node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">

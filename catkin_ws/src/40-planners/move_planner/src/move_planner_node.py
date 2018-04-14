@@ -77,7 +77,7 @@ class MovePlanner(object):
         conf_msg.data = True
         self.pub_finish.publish(conf_msg)
         # Publish message to fsm enter planning state
-        rospy.sleep(2)
+        #rospy.sleep(2)
         #self.pub_enter_planning.publish(conf_msg)
         
     def cbNextmove(self,msg):

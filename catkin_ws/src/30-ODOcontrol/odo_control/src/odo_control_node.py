@@ -43,7 +43,7 @@ class odo_control_node(object):
         self.v_bar = 0.6
 
         # Initialize node rate
-        self.rate = rospy.Rate(5)
+        self.rate = rospy.Rate(50)
 
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("/cmd_vel", Twist, queue_size=1)

@@ -6,4 +6,4 @@ serial_protocol:
    - "button_0"
    - "button_1"
 baudrate: 115200
-update_frequency: 5
+update_frequency: 10

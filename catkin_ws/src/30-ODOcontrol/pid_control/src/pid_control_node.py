@@ -26,7 +26,7 @@ class PIDcontrolnode(object):
         self.ref_pos_update = rospy.Subscriber("~ref_pos_update", Pose2DStamped, self.setAimPos)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
         # Create a timer that calls the cbTimer function every 1.0 second
         self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
         # Initialize aim position
@@ -66,6 +66,8 @@ class PIDcontrolnode(object):
         if self.active == False:
             return
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
+	if msg.x == 0.0 and msg.y == 0.0 and msg.theta == 0.0:
+	    return
         # Error
         err_x = msg.x - self.aim_pos_x
         err_y = msg.y - self.aim_pos_y
