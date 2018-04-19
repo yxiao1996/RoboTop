@@ -24,12 +24,13 @@
     <!--<node name="ccd_detector_node" pkg="ccd_detector" type="ccd_detector_node.py" output="screen">
       <remap from="~image_raw" to="/duckiebot/camera1/image_raw"/>
     </node>-->
+    <!--
     <node name="find_obj_node" pkg="find_obj" type="find_object_node.py" output="screen">
     
     </node>
-
+    -->
     <node name="find_object_2d" pkg="find_object_2d" type="find_object_2d" output="screen">
-		<remap from="image" to="/duckiebot/camera1/image_raw"/>
+		<remap from="image" to="/duckiebot0/camera_node/image/raw"/>
 		<param name="gui" value="true" type="bool"/>
 		<param name="session_path" value="/home/yxiao1996/workspace/RoboTop/catkin_ws/src/sim/detect_session/beer.bin" type="str"/>
 	</node>

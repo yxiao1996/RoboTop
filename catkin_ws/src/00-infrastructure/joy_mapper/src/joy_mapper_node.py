@@ -32,32 +32,84 @@ class JoyMapperNode(object):
     def setupParameter(self,param_name,default_value):
         value = rospy.get_param(param_name,default_value)
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
-        rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
+        #rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
     def cbJoy(self,joy_msg):
         self.joy = joy_msg
         self.publishControl()
         self.processButtons(joy_msg)
-        #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
-    """
-    def publishControl(self):
-        car_cmd_msg = Twist()
-        car_cmd_msg.angular.z = self.omega_gain * self.joy.axes[0]
-        car_cmd_msg.linear.x = self.v_gain * self.joy.axes[1]
-        self.pub_car_cmd.publish(car_cmd_msg)
-    """
+        rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
 
     def publishControl(self):
+        button_scalar = 0.4
+        # Forward and Backward ax
+        forward_ax = self.joy.axes[4]
+        forward_bt = self.joy.axes[7]
+        if abs(forward_ax) > 0.0 and abs(forward_bt) > 0.0:
+            # Both ax and button push, not allowed
+            forward_ctl = 0.0
+        else:
+            if abs(forward_ax) > 0.0:
+                forward_ctl = forward_ax
+            else:
+                forward_ctl = forward_bt * button_scalar
+        
+        # Left and right ax
+        left_ax = self.joy.axes[3]
+        left_bt = self.joy.axes[6]
+        if abs(left_ax) > 0.0 and abs(left_bt) > 0.0:
+            # Both ax and button push, not allowed
+            left_ctl = 0.0
+        else:
+            if abs(left_ax) > 0.0:
+                left_ctl = left_ax
+            else:
+                left_ctl = left_bt * button_scalar
+
+        # Rotation
+        rot_ax = self.joy.axes[1]
+        rot_l = self.joy.buttons[4]
+        rot_r = self.joy.buttons[5]
+        if rot_l == 1 and rot_r == 1:
+            # Push both at same time, not allowed
+            rot_bt = 0.0
+        else:
+            if rot_l == 1:
+                rot_bt = 1.0
+            else:
+                if rot_r == 1:
+                    rot_bt = -1.0
+                else:
+                    rot_bt = 0.0
+        if abs(rot_ax) > 0.0 and abs(rot_bt) > 0.0:
+            rot_ctl = 0.0
+        else:
+            if abs(rot_ax) > 0.0:
+                rot_ctl = rot_ax
+            else:
+                rot_ctl = rot_bt * button_scalar
+
         # Generate joystick commands
+        debug = False
+        if debug:
+            joystick_cmd = Joy6channel()
+            joystick_cmd.channel_0 = self.joy.axes[4]
+            joystick_cmd.channel_1 = self.joy.axes[3]
+            joystick_cmd.channel_2 = self.joy.axes[1]
+            joystick_cmd.channel_3 = self.joy.axes[0]
+            joystick_cmd.button_0 = self.joy.buttons[0]
+            joystick_cmd.button_1 = self.joy.buttons[1]
+
         joystick_cmd = Joy6channel()
-        joystick_cmd.channel_0 = self.joy.axes[4]
-        joystick_cmd.channel_1 = self.joy.axes[3]
-        joystick_cmd.channel_2 = self.joy.axes[1]
+        joystick_cmd.channel_0 = forward_ctl
+        joystick_cmd.channel_1 = left_ctl
+        joystick_cmd.channel_2 = rot_ctl
         joystick_cmd.channel_3 = self.joy.axes[0]
         joystick_cmd.button_0 = self.joy.buttons[0]
         joystick_cmd.button_1 = self.joy.buttons[1]
 
+        print joystick_cmd
         # Publish Joystick commands
         self.pub_joystick.publish(joystick_cmd)
 

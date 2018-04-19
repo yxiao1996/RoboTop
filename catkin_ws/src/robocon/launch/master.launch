@@ -53,7 +53,9 @@
 
     <!-- Start Joystick -->
     <group if="$(arg joystick)">
-        <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen">
+            <param name="deadzone" value="0.1"/>
+        </node>
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
         </node>
@@ -66,6 +68,7 @@
             <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
             <remap from="/Robo/serial_encoder_node/odo_data" to="/Robo/odo_control_node/twist2d"/>
             <remap from="/Robo/serial_encoder_node/pid_data" to="/Robo/pid_control_node/twist2d"/>
+            <remap from="/Robo/serial_encoder_node/move_data" to="/Robo/move_planner_node/move"/>
         </node>
     </group>
 

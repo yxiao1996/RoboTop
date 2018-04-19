@@ -32,6 +32,8 @@ add_message_files(
   viz_odom_tran.msg
   Pose2DStamped.msg
   Pose2DList.msg
+  AprilTagDetection.msg
+  AprilTagDetectionArray.msg
 )
 
 

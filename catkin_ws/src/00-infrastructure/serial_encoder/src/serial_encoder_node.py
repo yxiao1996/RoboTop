@@ -42,6 +42,7 @@ class serial_encoder_node(object):
         self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData, queue_size=1)
         self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
+        self.sub_move_data = rospy.Subscriber("~move_data", String, self.cbMove, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
@@ -58,6 +59,30 @@ class serial_encoder_node(object):
 
     def cbState(self, msg):
         self.joystick_state = msg.data
+
+    def cbMove(self, msg):
+        # send move according to message
+        move = msg.data
+        if move == "sleep":
+            button_0 = 0.0
+        else:
+            if move == "throw":
+                button_0 = 1.0
+            else:
+                return
+        data_list = translateCTLtoJoy(0.0,
+                                      0.0,
+                                      0.0,
+                                      0.0,   # Temp set phi, button1, button2 to zero
+                                      button_0,
+                                      0.0)
+        # Write data to serial port
+        rospy.loginfo("*************************************************")
+        for i, datum in enumerate(data_list):
+            self.encoder.write(datum)
+            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+        self.encoder.write(13)
+        self.encoder.write(10)
 
     def cbCtlData(self, msg, plot_everything=False):
         # check fsm state:

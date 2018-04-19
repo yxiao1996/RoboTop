@@ -19,6 +19,7 @@ class tsm_node(object):
         self.pub_macrotask = rospy.Publisher("~macrotask", String, queue_size=1)
         # Setup subscriber
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
+        self.sub_confirm = rospy.Subscriber("~confirm", BoolStamped, self.cbConfirm)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -32,6 +33,9 @@ class tsm_node(object):
         self.active = msg.data
         if self.active:
             self.publish_macrotask()
+
+    def cbConfirm(self, msg):
+        return
 
     def publish_macrotask(self):
         macro_msg = Int8()
