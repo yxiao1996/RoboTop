@@ -39,4 +39,5 @@
   <node name="apriltag_node" pkg="apriltags_ros" type="apriltag_node.py" output="screen">
     <remap from="~apriltags_in" to="/tag_detections"/>
   </node>
+  <node name="broadcaster_node" pkg="tf_node" type="broadcaster_node.py" output="screen"/>
 </launch>

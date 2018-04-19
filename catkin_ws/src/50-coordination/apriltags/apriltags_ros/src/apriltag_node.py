@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import tf
 import rospkg
 import rospy
 import yaml
@@ -10,6 +11,8 @@ from geometry_msgs.msg import PoseStamped
 class apriltag_node(object):
     def __init__(self):
         self.node_name = "apriltag_node"
+
+        self.listener = tf.TransformListener()
 
         # Load parameters
         self.camera_x     = self.setupParam("~camera_x", 0.065)
@@ -60,7 +63,17 @@ class apriltag_node(object):
             # Overwrite transformed value
             (trans.x, trans.y, trans.z) = tr.translation_from_matrix(veh_T_tagxout)
             (rot.x, rot.y, rot.z, rot.w) = tr.quaternion_from_matrix(veh_T_tagxout)
-            print tag_id, trans, rot
+
+            frame_name = '/carrot'+str(tag_id)
+            try:
+                (trans_tf,rot_tf) = self.listener.lookupTransform('/turtle1', frame_name, rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                    continue
+            rot_tf_rpy = tf.transformations.euler_from_quaternion(rot_tf)
+            yaw = rot_tf_rpy[2] / 3.14
+
+            print rot.z - yaw
+            #print tag_id, trans, rot
 
 
 
