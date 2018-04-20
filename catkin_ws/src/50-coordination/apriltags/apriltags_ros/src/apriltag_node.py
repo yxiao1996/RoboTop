@@ -3,8 +3,9 @@ import tf
 import rospkg
 import rospy
 import yaml
-from robocon_msgs.msg import AprilTagDetectionArray
 import numpy as np
+from std_msgs.msg import Int8
+from robocon_msgs.msg import AprilTagDetectionArray, BoolStamped
 import tf.transformations as tr
 from geometry_msgs.msg import PoseStamped
 
@@ -12,7 +13,10 @@ class apriltag_node(object):
     def __init__(self):
         self.node_name = "apriltag_node"
 
+        self.active = False
+
         self.listener = tf.TransformListener()
+        self.broadcaster = tf.TransformBroadcaster()
 
         # Load parameters
         self.camera_x     = self.setupParam("~camera_x", 0.065)
@@ -24,6 +28,9 @@ class apriltag_node(object):
         self.scale_z     = self.setupParam("~scale_z", 1)
 
         self.sub_prePros = rospy.Subscriber("~apriltags_in", AprilTagDetectionArray, self.callback, queue_size=1)
+        self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch, queue_size=1)
+        self.pub_tagId = rospy.Subscriber("~tag_id", Int8, queue_size=1)
+        self.pub_coord = rospy.Publisher("~coord", BoolStamped, queue_size=1)
         self.pub_visualize = rospy.Publisher("~tag_pose", PoseStamped, queue_size=1)
 
     def setupParam(self,param_name,default_value):
@@ -32,7 +39,12 @@ class apriltag_node(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbSwitch(self, msg):
+        self.active = msg.data
+
     def callback(self, msg):
+        if not self.active:
+            return
         
         tag_infos = []
 
@@ -71,11 +83,39 @@ class apriltag_node(object):
                     continue
             rot_tf_rpy = tf.transformations.euler_from_quaternion(rot_tf)
             yaw = rot_tf_rpy[2] / 3.14
+            # Check phase
+            if tag_id == 3:
+                # Back of the objet, phase confusion
+                if rot.z < 0.0:
+                    # turn around the coordinate frame to avoid confusion
+                    yaw = -yaw
 
-            print rot.z - yaw
+            # Publish tag id
+            tag_id_msg = Int8()
+            tag_id_msg.data = tag_id
+            self.pub_tagId.publish(tag_id_msg)
+            # Broadcast tranform
+            self.broadcaster.sendTransform((trans.x, trans.y, trans.z),
+                                            tf.transformations.quaternion_from_euler(0, 0, rot.z-yaw),
+                                            rospy.Time.now(),
+                                            "turtle1",
+                                            "camera")
+            
+            print detection
+            self.checkProtocol(tag_id)
+            #print rot.z - yaw
             #print tag_id, trans, rot
 
-
+    def checkProtocol(self, tag_id):
+        # A fake protocol for test
+        if tag_id == 1:
+            task_success = True
+        else:
+            task_success = False
+        coord_msg = BoolStamped()
+        coord_msg.header.stamp = rospy.Time.now()
+        coord_msg.data = task_success
+        self.pub_coord.publish(coord_msg)
 
 if __name__ == '__main__': 
     rospy.init_node('apriltag_node',anonymous=False)

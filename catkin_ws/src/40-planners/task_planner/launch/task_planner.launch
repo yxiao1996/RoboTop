@@ -3,6 +3,49 @@
     <arg name="config" default="baseline" doc="Specify a config."/>
     <arg name="param_file_name" default="default"/>
 
+    <!--Apriltag coordination nodes-->
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+        <param name="video_device" value="/dev/video0" />
+        <param name="image_width" value="640" />
+        <param name="image_height" value="480" />
+        <param name="pixel_format" value="yuyv" />
+        <param name="camera_frame_id" value="usb_cam" />
+        <param name="io_method" value="mmap"/>
+    </node>
+    <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+        <remap from="image" to="/usb_cam/image_raw"/>
+        <param name="autosize" value="true" />
+    </node>
+    <node ns="$(arg veh)" pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector" output="screen">
+        <!-- Remap topic required by the node to custom topics -->
+        <remap from="image_rect" to="/usb_cam/image_raw" />
+        <remap from="camera_info" to="/usb_cam/camera_info" />
+
+        <!-- Optional: Subscribe to the compressed stream-->
+        <param name="image_transport" type="str" value="compressed" />
+
+        <!-- Select the tag family: 16h5, 25h7, 25h9, 36h9, or 36h11(default) -->
+        <param name="tag_family" type="str" value="36h11" />
+
+        <!-- Enable projected optical measurements for more accurate tag transformations -->
+        <!-- This exists for backwards compatability and should be left true for new setups -->
+        <param name="projected_optics" type="bool" value="true" />
+
+        <!-- Describe the tags -->
+        <rosparam param="tag_descriptions">[
+        {id: 0, size: 0.163513},
+        {id: 1, size: 0.163513, frame_id: a_frame},
+        {id: 2, size: 0.163513, frame_id: tag_2},
+        {id: 3, size: 0.163513},
+        {id: 4, size: 0.163513},
+        {id: 5, size: 0.163513}]
+        </rosparam>
+    </node>
+    <node ns="$(arg veh)" name="apriltag_node" pkg="apriltags_ros" type="apriltag_node.py" output="screen">
+        <remap from="~apriltags_in" to="$(arg veh)/tag_detections"/>
+    </node>
+    <node ns="$(arg veh)" name="broadcaster_node" pkg="tf_node" type="broadcaster_node.py" output="screen"/>
+
 	<node ns="$(arg veh)" pkg="fsm" type="fsm_node.py" name="fsm_node" clear_params="true" output="screen" required="true">
         <rosparam command="load" file="$(find robocon)/config/$(arg config)/fsm/fsm_node/$(arg param_file_name).yaml"/>
     </node>
@@ -13,6 +56,7 @@
         <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
         <remap from="/Robo/task_planner_node/finish_move" to="/Robo/move_planner_node/finish"/>
         <remap from="/Robo/task_planner_node/finish_path" to="/Robo/path_planner_node/reach_dest"/>
+        <remap from="/Robo/task_planner_node/finish_coord" to="/Robo/apriltag_node/coord"/>
     </node>
 
 	<node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">
