@@ -19,6 +19,7 @@ class JoyMapperNode(object):
         self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
+        self.sub_virt = rospy.Subscriber("/virtual_joystick/cmd_vel", Twist, self.cbVirtJoy)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -35,6 +36,14 @@ class JoyMapperNode(object):
         #rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbVirtJoy(self, msg):
+        joy_msg = Joy()
+        joy_msg.axes[4] = msg.linear.x
+        joy_msg.axes[3] = msg.angular.z
+        self.joy = joy_msg
+        self.publishControl()
+        self.processButtons(joy_msg)
+        
     def cbJoy(self,joy_msg):
         self.joy = joy_msg
         self.publishControl()
