@@ -13,7 +13,7 @@ class apriltag_node(object):
     def __init__(self):
         self.node_name = "apriltag_node"
 
-        self.active = False
+        self.active = True
 
         self.listener = tf.TransformListener()
         self.broadcaster = tf.TransformBroadcaster()
@@ -29,7 +29,7 @@ class apriltag_node(object):
 
         self.sub_prePros = rospy.Subscriber("~apriltags_in", AprilTagDetectionArray, self.callback, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch, queue_size=1)
-        self.pub_tagId = rospy.Subscriber("~tag_id", Int8, queue_size=1)
+        self.pub_tagId = rospy.Publisher("~tag_id", Int8, queue_size=1)
         self.pub_coord = rospy.Publisher("~coord", BoolStamped, queue_size=1)
         self.pub_visualize = rospy.Publisher("~tag_pose", PoseStamped, queue_size=1)
 
@@ -47,6 +47,11 @@ class apriltag_node(object):
             return
         
         tag_infos = []
+        trans_x_buf = 0.0
+        trans_y_buf = 0.0
+        trans_z_buf = 0.0
+        rot_z_buf = 0.0
+        yaw_buf = 0.0
 
          # Load tag detections message
         for detection in msg.detections:
@@ -94,17 +99,20 @@ class apriltag_node(object):
             tag_id_msg = Int8()
             tag_id_msg.data = tag_id
             self.pub_tagId.publish(tag_id_msg)
-            # Broadcast tranform
-            self.broadcaster.sendTransform((trans.x, trans.y, trans.z),
-                                            tf.transformations.quaternion_from_euler(0, 0, rot.z-yaw),
-                                            rospy.Time.now(),
-                                            "turtle1",
-                                            "camera")
             
             print detection
             self.checkProtocol(tag_id)
             #print rot.z - yaw
             #print tag_id, trans, rot
+            rot_z_buf += rot.z
+            yaw_buf += yaw
+        if len(msg.detections) > 0:
+            # Broadcast tranform
+            self.broadcaster.sendTransform((trans.x, trans.y, trans.z),
+                                            tf.transformations.quaternion_from_euler(0, 0, 3.14*(rot_z_buf-yaw_buf)/float(len(msg.detections))),
+                                            rospy.Time.now(),
+                                            "turtle1",
+                                            "camera")
 
     def checkProtocol(self, tag_id):
         # A fake protocol for test
