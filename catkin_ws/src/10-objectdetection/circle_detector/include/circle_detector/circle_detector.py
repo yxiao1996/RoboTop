@@ -18,6 +18,8 @@ class CircleDetector():
         self.hsv_red2 = np.array([15, 255, 255])
         self.hsv_red3 = np.array([165, 140, 100])
         self.hsv_red4 = np.array([180, 255, 255])
+        self.hsv_green1 = np.array([41, 40, 40])
+        self.hsv_green2 = np.array([90, 255, 255])
 
         # Parameters for dilation, Canny, and etc: default
         self.dilation_kernel_size = 3
@@ -36,6 +38,8 @@ class CircleDetector():
             bw = cv2.inRange(self.hsv, self.hsv_white1, self.hsv_white2)
         elif color == 'yellow':
             bw = cv2.inRange(self.hsv, self.hsv_yellow1, self.hsv_yellow2)
+        elif color == 'green':
+            bw = cv2.inRange(self.hsv, self.hsv_green1, self.hsv_green2)
         elif color == 'red':
             bw1 = cv2.inRange(self.hsv, self.hsv_red1, self.hsv_red2)
             bw2 = cv2.inRange(self.hsv, self.hsv_red3, self.hsv_red4)
@@ -136,8 +140,8 @@ class CircleDetector():
         return lines
 
     def _HoughCircle(self, img):
-        circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,2,20,
-                                   param1=200,param2=100,minRadius=0,maxRadius=0)
+        circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
+                                   param1=50,param2=30,minRadius=0,maxRadius=0)
         if circles is not None:
             circles = np.int16(np.around(circles))
         else:
@@ -173,7 +177,8 @@ class CircleDetector():
         return lines, normals, centers, bw
 
     def detectCircles(self, color):
-        #img = cv2.medianBlur(self.bgr,5)
+        img = cv2.medianBlur(self.bgr,5)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         bw, edge_color = self._colorFilter(color)
         circles = self._HoughCircle(bw)
         debug = False
@@ -197,7 +202,7 @@ class CircleDetector():
 
     def drawCircles(self, circles):
         if len(circles) > 0:
-            for i in circles[0,:1]:
+            for i in circles[0,:]:
                 # draw the outer circle
                 cv2.circle(self.bgr,(i[0],i[1]),i[2],(0,255,0),2)
                 # draw the center of the circle
@@ -235,7 +240,7 @@ def _main():
     #d = LineDetector()
     d = CircleDetector()
     d.setImage(img)
-    d.detectCircles('white')
+    d.detectCircles('green')
     #lines_white, normals_white, centers_white, area_white = d.detectLines('white')
     #d.drawLines(lines_white, (0,255,0))
     #d.drawNormals(centers_white, normals_white, (255, 0, 0))

@@ -3,4 +3,8 @@
   </include>
   <node name="circle_detector" pkg="circle_detector" type="circle_detector_node.py" output="screen">
   </node>
+  <node name="roi_filter" pkg="roi_filter" type="roi_filter_node.py" output="screen">
+    <remap from="~set_ref" to="circle_detector/set_ref"/>
+    <remap from="~roi" to="circle_detector/roi"/>
+  </node>
 </launch>

@@ -16,16 +16,17 @@ class CircleDetectorNode():
         self.detector = CircleDetector()
         self.status = "init"
         self.debug = False
-        self.data_size = 100
+        self.data_size = 50
         self.trigger = False
         self.fit_circles = None
         # Publishers
-        self.pub_roi = rospy.Publisher("roi", Image, queue_size=1)
-        self.pub_debug = rospy.Publisher("image_with_circles", Image, queue_size=1)
-        self.pub_bw_img = rospy.Publisher("bw_image", Image, queue_size=1)
+        self.pub_roi = rospy.Publisher("~roi", Image, queue_size=10)
+        self.pub_set_ref = rospy.Publisher("~set_ref", BoolStamped, queue_size=1)
+        self.pub_debug = rospy.Publisher("~image_with_circles", Image, queue_size=1)
+        self.pub_bw_img = rospy.Publisher("~bw_image", Image, queue_size=1)
         # Subscribers
-        self.sub_trigger = rospy.Subscriber("trigger", BoolStamped, self.cbTrigger, queue_size=1)
-        self.sub_image = rospy.Subscriber("/usb_cam/image_raw", Image, self.cbImage, queue_size=1)
+        self.sub_trigger = rospy.Subscriber("~trigger", BoolStamped, self.cbTrigger, queue_size=1)
+        self.sub_image = rospy.Subscriber("/usb_cam/image_raw/compressed", CompressedImage, self.cbImage, queue_size=10)
         # Timers
         rospy.Timer(rospy.Duration.from_sec(1.0/self.framerate), self.mainLoop)
     
@@ -36,7 +37,7 @@ class CircleDetectorNode():
             rospy.loginfo("[%s] get trigger, start capturing image" %(self.node_name))
 
     def cbImage(self, image_msg):
-        cv_image = self.bridge.imgmsg_to_cv2(image_msg, "bgr8")
+        cv_image = self.bridge.compressed_imgmsg_to_cv2(image_msg, "bgr8")
         self.rbg = cv_image
         self.status = "default"
         if self.fit_circles is not None:
@@ -61,15 +62,24 @@ class CircleDetectorNode():
             roi = self.rbg[y1:y2, x1:x2, :]
             roi = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
             roi = cv2.resize(roi, (100, 100))
-            image_msg = self.bridge.cv2_to_imgmsg(roi, 'rgb8')
-            self.pub_roi.publish(image_msg)
+            #msg = CompressedImage()
+            #msg.header.stamp = image_msg.header.stamp
+            #msg.format = "yuyv"
+            #msg.data = np.array(cv2.imencode('.yuyv', roi)[1]).tostring()
+            msg = self.bridge.cv2_to_imgmsg(roi, 'rgb8')
+            msg.header.stamp = image_msg.header.stamp
+            self.pub_roi.publish(msg)
 
     def fitData(self):
         self.trigger = False
         rospy.loginfo("[%s] fitting data" %(self.node_name))
         # fit the data using gaussian mixture
-        clf = mixture.GaussianMixture(n_components=4, covariance_type='full')
+        clf = mixture.GaussianMixture(n_components=2, covariance_type='full')
         clf.fit(self.data)
+        # Publish set ref message to filter
+        set_msg = BoolStamped()
+        set_msg.header.stamp = rospy.Time.now()
+        self.pub_set_ref.publish(set_msg)
         return clf.means_
 
     def mainLoop(self, _event):
@@ -78,7 +88,7 @@ class CircleDetectorNode():
         if self.status == "default":
             # Detect circles in image
             self.detector.setImage(self.rbg)
-            circles, bw_image = self.detector.detectCircles('white')
+            circles, bw_image = self.detector.detectCircles('green')
 
             # Crop Image according to circles area
             if len(circles) > 0:
@@ -86,6 +96,8 @@ class CircleDetectorNode():
                 if len(self.data) < self.data_size:
                     rospy.loginfo("[%s] capturing image %s / %s" %(self.node_name, len(self.data), self.data_size))
                     self.data.append(circle)
+                    #circle = circles[0, 1]
+                    #self.data.append(circle)
                 else:
                     self.fit_circles = self.fitData()
                     self.detector.drawCircles_(self.fit_circles)
