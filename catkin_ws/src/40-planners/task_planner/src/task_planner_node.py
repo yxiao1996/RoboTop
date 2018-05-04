@@ -67,6 +67,8 @@ class task_planner_node(object):
     def cbFinishCoord(self, msg):
         #if not self.active:
         #    return
+        if len(self.current_macro_task) > 0:
+            return
         # Finish coordination switch to next macro task
         if msg.data:
             # I receive positive confirm, switch to next task

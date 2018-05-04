@@ -40,6 +40,7 @@ nodes:
   path_planner_node: "path_planner_node/switch"
   move_planner_node: "move_planner_node/switch"
   task_planner_node: "task_planner_node/switch"
+  apriltag_node: "apriltag_node/switch"
 
 states:
   JOYSTICK_CONTROL:
@@ -69,3 +70,4 @@ states:
     active_nodes:
     - pid_control_node
     - move_planner_node
+    - apriltag_node

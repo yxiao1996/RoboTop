@@ -3,7 +3,7 @@ import rospy
 import math
 import tf
 import numpy as np
-from fuzzy_controllers import OmegaControl
+#from fuzzy_controllers import OmegaControl
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 #from pkg_name.util import HelloGoodbye #Imports module. Not limited to modules in this pkg. 
-from std_msgs.msg import String #Imports msg
+from std_msgs.msg import String, Bool #Imports msg
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from robocon_msgs.msg import Joy6channel, BoolStamped
@@ -20,6 +20,7 @@ class JoyMapperNode(object):
         # Setup subscriber
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
         self.sub_virt = rospy.Subscriber("/virtual_joystick/cmd_vel", Twist, self.cbVirtJoy)
+        self.sub_android_switch = rospy.Subscriber("/android/switch", Bool, self.cbAndSwitch)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -36,10 +37,32 @@ class JoyMapperNode(object):
         #rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbAndSwitch(self, msg):
+        # joystick override False button
+        if msg.data == True:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = False
+            self.pub_buttons.publish(joy_override_msg)
+
+        # joystick override True button
+        if msg.data == False:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = True
+            self.pub_buttons.publish(joy_override_msg)
+
     def cbVirtJoy(self, msg):
         joy_msg = Joy()
-        joy_msg.axes[4] = msg.linear.x
-        joy_msg.axes[3] = msg.angular.z
+        #joy_msg.axes[0] = 0.0
+        #joy_msg.axes[1] = 0.0
+        #joy_msg.axes[2] = 0.0
+        joy_data = [0.0, 0.0, 0.0, msg.angular.z, msg.linear.x, 0.0, 0.0, 0.0]
+        button_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        #joy_msg.axes[4] = msg.linear.x
+        #joy_msg.axes[3] = msg.angular.z
+        joy_msg.axes = joy_data
+        joy_msg.buttons = button_data
         self.joy = joy_msg
         self.publishControl()
         self.processButtons(joy_msg)
@@ -48,7 +71,7 @@ class JoyMapperNode(object):
         self.joy = joy_msg
         self.publishControl()
         self.processButtons(joy_msg)
-        rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
+        #rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
 
     def publishControl(self):
         button_scalar = 0.4
@@ -118,7 +141,7 @@ class JoyMapperNode(object):
         joystick_cmd.button_0 = self.joy.buttons[0]
         joystick_cmd.button_1 = self.joy.buttons[1]
 
-        print joystick_cmd
+        #print joystick_cmd
         # Publish Joystick commands
         self.pub_joystick.publish(joystick_cmd)
 
