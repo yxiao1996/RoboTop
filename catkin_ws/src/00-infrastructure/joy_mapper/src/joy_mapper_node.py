@@ -24,8 +24,9 @@ class JoyMapperNode(object):
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
-        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
-        
+        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
+
+        self.joy_msg = Joy6channel()
         self.v_gain = 100
         self.omega_gain = 10
 
@@ -129,21 +130,28 @@ class JoyMapperNode(object):
             joystick_cmd.channel_0 = self.joy.axes[4]
             joystick_cmd.channel_1 = self.joy.axes[3]
             joystick_cmd.channel_2 = self.joy.axes[1]
-            joystick_cmd.channel_3 = self.joy.axes[0]
-            joystick_cmd.button_0 = self.joy.buttons[0]
-            joystick_cmd.button_1 = self.joy.buttons[1]
+            joystick_cmd.channel_3 = 0.0
+            joystick_cmd.channel_4 = 0.0
+            joystick_cmd.channel_5 = 0.0
+            joystick_cmd.channel_6 =  0.0
+            joystick_cmd.channel_7 = self.joy.buttons[0]
+            joystick_cmd.channel_8 = self.joy.buttons[1]
 
         joystick_cmd = Joy6channel()
         joystick_cmd.channel_0 = forward_ctl
         joystick_cmd.channel_1 = left_ctl
         joystick_cmd.channel_2 = rot_ctl
-        joystick_cmd.channel_3 = self.joy.axes[0]
-        joystick_cmd.button_0 = self.joy.buttons[0]
-        joystick_cmd.button_1 = self.joy.buttons[1]
+        joystick_cmd.channel_3 = 0.0
+        joystick_cmd.channel_4 = 0.0
+        joystick_cmd.channel_5 = 0.0
+        joystick_cmd.channel_6 =  0.0
+        joystick_cmd.channel_7 = self.joy.buttons[0]
+        joystick_cmd.channel_8 = self.joy.buttons[1]
 
+        self.joy_msg = joystick_cmd
         #print joystick_cmd
         # Publish Joystick commands
-        self.pub_joystick.publish(joystick_cmd)
+        #self.pub_joystick.publish(joystick_cmd)
 
     def processButtons(self, joy_msg):
         # joystick override False button
@@ -161,6 +169,11 @@ class JoyMapperNode(object):
             self.pub_buttons.publish(joy_override_msg)
 
         return
+
+    def cbTimer(self, _):
+        # Publish Joystick commands
+        self.pub_joystick.publish(self.joy_msg)
+        print self.joy_msg
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
