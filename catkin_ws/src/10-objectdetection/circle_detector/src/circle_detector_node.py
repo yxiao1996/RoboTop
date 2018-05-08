@@ -20,13 +20,13 @@ class CircleDetectorNode():
         self.trigger = False
         self.fit_circles = None
         # Publishers
-        self.pub_roi = rospy.Publisher("~roi", Image, queue_size=10)
+        self.pub_roi = rospy.Publisher("~roi", Image, queue_size=20)
         self.pub_set_ref = rospy.Publisher("~set_ref", BoolStamped, queue_size=1)
         self.pub_debug = rospy.Publisher("~image_with_circles", Image, queue_size=1)
         self.pub_bw_img = rospy.Publisher("~bw_image", Image, queue_size=1)
         # Subscribers
         self.sub_trigger = rospy.Subscriber("~trigger", BoolStamped, self.cbTrigger, queue_size=1)
-        self.sub_image = rospy.Subscriber("/usb_cam/image_raw/compressed", CompressedImage, self.cbImage, queue_size=10)
+        self.sub_image = rospy.Subscriber("/usb_cam/image_raw/compressed", CompressedImage, self.cbImage, queue_size=20)
         # Timers
         rospy.Timer(rospy.Duration.from_sec(1.0/self.framerate), self.mainLoop)
     

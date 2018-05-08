@@ -27,13 +27,14 @@ add_message_files(
   CCD_data.msg
   CCD_pose.msg
   Twist2DStamped.msg
-  Joy6channel.msg
+  JoyRemote.msg
   viz_odom_rot.msg
   viz_odom_tran.msg
   Pose2DStamped.msg
   Pose2DList.msg
   AprilTagDetection.msg
   AprilTagDetectionArray.msg
+  JoyAuto.msg
 )
 
 

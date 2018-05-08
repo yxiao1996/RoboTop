@@ -10,11 +10,12 @@
     <arg name="fsm" default="true"/>
     <arg name="joystick" default="true"/>
     <arg name="encoder" default="true"/>
-    <arg name="decoder" default="true"/>
+    <arg name="decoder" default="false"/>
     <arg name="ccd" default="false"/>
     <arg name="ccd/ccd_detector" default="false"/>
     <arg name="odo" default="false"/>
     <arg name="viz_odom" default="false"/>
+    <arg name="protocol_auto_flag" default="true"/>
 
     <arg name="planner" default="false"/>
 
@@ -58,6 +59,7 @@
         </node>
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
+            <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
         </node>
     </group>
 
@@ -65,7 +67,9 @@
     <group if="$(arg encoder)">
         <node ns="$(arg veh)" pkg="serial_encoder" type="serial_encoder_node.py" name="serial_encoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_encoder/serial_encoder_node/$(arg param_file_name).yaml"/>
-            <remap from="/Robo/serial_encoder_node/joy_data" to="/Robo/joy_mapper_node/joy_data"/>
+            <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
+            <remap from="/Robo/serial_encoder_node/joy_auto" to="/Robo/joy_mapper_node/joy_auto"/>
+            <remap from="/Robo/serial_encoder_node/joy_remote" to="/Robo/joy_mapper_node/joy_remote"/>
             <remap from="/Robo/serial_encoder_node/odo_data" to="/Robo/odo_control_node/twist2d"/>
             <remap from="/Robo/serial_encoder_node/pid_data" to="/Robo/pid_control_node/twist2d"/>
             <remap from="/Robo/serial_encoder_node/move_data" to="/Robo/move_planner_node/move"/>

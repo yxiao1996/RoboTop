@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import rospy
 #from pkg_name.util import HelloGoodbye #Imports module. Not limited to modules in this pkg. 
-from std_msgs.msg import String #Imports msg
+from std_msgs.msg import String, Bool #Imports msg
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from robocon_msgs.msg import JoyAuto, JoyRemote, BoolStamped
+from robocon_msgs.msg import Joy6channel, BoolStamped
 
 class JoyMapperNode(object):
     def __init__(self):
@@ -13,22 +13,20 @@ class JoyMapperNode(object):
         
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
-        self.protocol_auto_flag = rospy.get_param("~protocol_auto_flag")
-        self.cmd_auto = JoyAuto()
-        self.cmd_remote = JoyRemote()
-
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("~car_cmd",Twist, queue_size=1)
-        self.pub_joy_auto = rospy.Publisher("~joy_auto", JoyAuto, queue_size=1)
-        self.pub_joy_remo = rospy.Publisher("~joy_remote", JoyRemote, queue_size=1)
+        self.pub_joystick = rospy.Publisher("~joy_data", Joy6channel, queue_size=1)
         self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
+        self.sub_virt = rospy.Subscriber("/virtual_joystick/cmd_vel", Twist, self.cbVirtJoy)
+        self.sub_android_switch = rospy.Subscriber("/android/switch", Bool, self.cbAndSwitch)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
         self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
-        
+
+        self.joy_msg = Joy6channel()
         self.v_gain = 100
         self.omega_gain = 10
 
@@ -40,6 +38,36 @@ class JoyMapperNode(object):
         #rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbAndSwitch(self, msg):
+        # joystick override False button
+        if msg.data == True:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = False
+            self.pub_buttons.publish(joy_override_msg)
+
+        # joystick override True button
+        if msg.data == False:
+            joy_override_msg = BoolStamped()
+            joy_override_msg.header.stamp = rospy.Time.now()
+            joy_override_msg.data = True
+            self.pub_buttons.publish(joy_override_msg)
+
+    def cbVirtJoy(self, msg):
+        joy_msg = Joy()
+        #joy_msg.axes[0] = 0.0
+        #joy_msg.axes[1] = 0.0
+        #joy_msg.axes[2] = 0.0
+        joy_data = [0.0, 0.0, 0.0, msg.angular.z, msg.linear.x, 0.0, 0.0, 0.0]
+        button_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        #joy_msg.axes[4] = msg.linear.x
+        #joy_msg.axes[3] = msg.angular.z
+        joy_msg.axes = joy_data
+        joy_msg.buttons = button_data
+        self.joy = joy_msg
+        self.publishControl()
+        self.processButtons(joy_msg)
+        
     def cbJoy(self,joy_msg):
         self.joy = joy_msg
         self.publishControl()
@@ -96,32 +124,34 @@ class JoyMapperNode(object):
                 rot_ctl = rot_bt * button_scalar
 
         # Generate joystick commands
-        # check protocol type
-        if self.protocol_auto_flag:
-            joystick_cmd = JoyAuto()
-            joystick_cmd.channel_0 = forward_ctl
-            joystick_cmd.channel_1 = left_ctl
-            joystick_cmd.channel_2 = rot_ctl
-            joystick_cmd.channel_3 = -0.2
-            joystick_cmd.channel_3 = 0.6
+        debug = False
+        if debug:
+            joystick_cmd = Joy6channel()
+            joystick_cmd.channel_0 = self.joy.axes[4]
+            joystick_cmd.channel_1 = self.joy.axes[3]
+            joystick_cmd.channel_2 = self.joy.axes[1]
+            joystick_cmd.channel_3 = -0.1
+            joystick_cmd.channel_4 = 0.5
             joystick_cmd.channel_5 = 0.0
-            joystick_cmd.channel_6 = 0.0
+            joystick_cmd.channel_6 =  0.0
             joystick_cmd.channel_7 = float(self.joy.buttons[0])
             joystick_cmd.channel_8 = float(self.joy.buttons[1])
-            self.cmd_auto = joystick_cmd
-        else:
-            joystick_cmd = JoyRemote()
-            joystick_cmd.channel_0 = forward_ctl
-            joystick_cmd.channel_1 = left_ctl
-            joystick_cmd.channel_2 = rot_ctl
-            joystick_cmd.channel_3 = 0.0
-            joystick_cmd.button_0 = self.joy.buttons[0]
-            joystick_cmd.button_1 = self.joy.buttons[1]
-            self.cmd_remote = joystick_cmd
 
+        joystick_cmd = Joy6channel()
+        joystick_cmd.channel_0 = forward_ctl
+        joystick_cmd.channel_1 = left_ctl
+        joystick_cmd.channel_2 = rot_ctl
+        joystick_cmd.channel_3 = -0.1
+        joystick_cmd.channel_4 = 0.5
+        joystick_cmd.channel_5 = 0.0
+        joystick_cmd.channel_6 =  0.0
+        joystick_cmd.channel_7 = self.joy.buttons[0]
+        joystick_cmd.channel_8 = self.joy.buttons[1]
+
+        self.joy_msg = joystick_cmd
         #print joystick_cmd
         # Publish Joystick commands
-        #self.pub_joy_auto.publish(joystick_cmd)
+        #self.pub_joystick.publish(joystick_cmd)
 
     def processButtons(self, joy_msg):
         # joystick override False button
@@ -141,11 +171,9 @@ class JoyMapperNode(object):
         return
 
     def cbTimer(self, _):
-        # check protocol type
-        if self.protocol_auto_flag:
-            self.pub_joy_auto.publish(self.cmd_auto)
-        else:
-            self.pub_joy_remo.publish(self.cmd_remote)
+        # Publish Joystick commands
+        self.pub_joystick.publish(self.joy_msg)
+        print self.joy_msg
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
