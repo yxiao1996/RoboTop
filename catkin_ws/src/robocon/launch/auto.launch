@@ -2,7 +2,7 @@
     <include file="$(find robocon)/launch/master.launch">
         <arg name="fsm" value="true"/>
         <arg name="camera" value="false"/>
-        <arg name="joystick" value="false"/>
+        <arg name="joystick" value="true"/>
         <arg name="odo" value="true"/>
         <arg name="encoder" value="true"/>
 	    <arg name="decoder" value="true"/>

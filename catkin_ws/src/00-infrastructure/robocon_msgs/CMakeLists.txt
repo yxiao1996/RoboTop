@@ -34,6 +34,8 @@ add_message_files(
   Pose2DList.msg
   AprilTagDetection.msg
   AprilTagDetectionArray.msg
+  JoyRemote.msg
+  JoyAuto.msg
 )
 
 

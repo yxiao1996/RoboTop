@@ -2,8 +2,8 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from serial_encoder.encoder import SerialEncoder as Encoder
-from serial_encoder.translater import translateAuto, translateRemote, translateCTLtoJoy
-from robocon_msgs.msg import CCD_data, Twist2DStamped, JoyRemote, JoyAuto, BoolStamped
+from serial_encoder.translater import translate, translateCTLtoJoy
+from robocon_msgs.msg import CCD_data, Twist2DStamped, Joy6channel, BoolStamped
 import numpy as np
 import matplotlib.pyplot as plt 
 import plot
@@ -11,22 +11,17 @@ import plot
 class serial_encoder_node(object):
     def __init__(self):
         # Init Eecoder
-        self.protocol_auto = rospy.get_param("~protocol_auto")
-        self.protocol_remote = rospy.get_param("~protocol_remote")
+        self.protocol = rospy.get_param("~serial_protocol")
         self.baudrate = rospy.get_param("~baudrate")
         self.encoder = Encoder(self.baudrate)
         self.joystick_state = True
 
         # setup frequency
         self.frequency = rospy.get_param("~update_frequency")
-        self.protocol_auto_flag = rospy.get_param("~protocol_auto_flag")
         self.Rate = rospy.Rate(self.frequency)
         self.display_every = 3
         self.display_buffer = 0
-        if self.protocol_auto_flag:
-            self.protocol = self.protocol_auto
-        else:
-            self.protocol = self.protocol_remote
+    
         # display figure
         self.display_init = False
         #self.fig, self.axes = plt.subplots(6, 1)
@@ -44,8 +39,7 @@ class serial_encoder_node(object):
         rospy.loginfo("[%s]: baudrate: [%s]" %(self.node_name, self.baudrate))
 
         # Setup subscriber
-        self.sub_joy_auto = rospy.Subscriber("~joy_auto", JoyAuto, self.cbJoyData, queue_size=1)
-        self.sub_joy_remo = rospy.Subscriber("~joy_remote", JoyRemote, self.cbJoyData)
+        self.sub_joy_data = rospy.Subscriber("~joy_data", Joy6channel, self.cbJoyData, queue_size=1)
         self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_move_data = rospy.Subscriber("~move_data", String, self.cbMove, queue_size=1)
@@ -124,40 +118,23 @@ class serial_encoder_node(object):
         # Check fsm state: joystick control
         if self.joystick_state != True:
             return
-        # check protocol type
-        if self.protocol_auto_flag:
-            # Using protocol for auto-control
-            # translate data
-            data_list = translateAuto(msg.channel_0/3.0,
-                                -msg.channel_1/3.0,
-                                msg.channel_2/3.0,
-                                msg.channel_3,
-                                msg.channel_4,
-                                msg.channel_5,
-                                msg.channel_6,
-                                msg.channel_7,
-                                msg.channel_8)
-            
-            # Check protocol
-            if len(data_list) != len(self.protocol_auto):
-                print "length data list: ", len(data_list)
-                print "length protocol: ", len(self.protocol_auto)
-                raise Exception("Serial Protocol not matched!")
-        else:
-            # Using protocol for remote-control
-            # translate data
-            data_list = translateRemote(msg.channel_0/3.0,
-                                -msg.channel_1/3.0,
-                                msg.channel_2/3.0,
-                                msg.channel_3/3.0,
-                                msg.button_0,
-                                msg.button_1)
-            
-            # Check protocol
-            if len(data_list) != len(self.protocol_remote):
-                print "length data list: ", len(data_list)
-                print "length protocol: ", len(self.protocol_remote)
-                raise Exception("Serial Protocol not matched!")
+
+        # translate data
+        data_list = translate(msg.channel_0/3.0,
+                              -msg.channel_1/3.0,
+                              msg.channel_2/3.0,
+                              msg.channel_3,
+                              msg.channel_4,
+                              msg.channel_5,
+                              msg.channel_6,
+                              msg.channel_7,
+                              msg.channel_8)
+        
+        # Check protocol
+        if len(data_list) != 9:
+            print "length data list: ", len(data_list)
+            print "length protocol: ", len(self.protocol)
+            raise Exception("Serial Protocol not matched!")
 
         # Display
         if plot_everything:
