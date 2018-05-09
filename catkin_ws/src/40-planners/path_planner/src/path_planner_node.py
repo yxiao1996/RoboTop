@@ -66,21 +66,22 @@ class PathPlanner(object):
         self.pub_set_confirm.publish(conf_msg)
 
     def cbNextGoal(self,msg):
+        debug = False
         # Pop next goal on path
         try:
             # If we can pop another goal
             print "pop!"
             self.goal = self.path.pop()
-            goal_msg = Pose2DStamped()
-            goal_msg.header.stamp = rospy.Time.now()
-            goal_msg.x = self.goal[0]
-            goal_msg.y = self.goal[1]
-            goal_msg.theta = self.goal[2]
-            self.pub_goal.publish(goal_msg)
+            if not debug:
+                goal_msg = Pose2DStamped()
+                goal_msg.header.stamp = rospy.Time.now()
+                goal_msg.x = self.goal[0]
+                goal_msg.y = self.goal[1]
+                goal_msg.theta = self.goal[2]
+                self.pub_goal.publish(goal_msg)
             #self.Rate.sleep()
         except:
             # Cannot pop another goal, reach destination
-            debug = False
             if debug:
                 self.path = [(0.0, 0.0, 0.0), (1000.0, 0.0, 0.0), (1000.0, 1000.0, 0.0), (0.0, 1000.0, 0.0)]
             else:

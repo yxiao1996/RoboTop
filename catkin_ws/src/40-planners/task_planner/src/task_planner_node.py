@@ -140,17 +140,17 @@ class task_planner_node(object):
             finish_msg.data = True
             self.pub_finish.publish(finish_msg)
         except:
-            return
-            debug = False
+            debug = True
             if debug:
-                self.current_task = self.default_task
-                rospy.loginfo("[%s] pop default task" %(self.node_name))
+                #self.current_task = self.default_task
+                #rospy.loginfo("[%s] pop default task" %(self.node_name))
                 # Publish finish message
                 finish_msg = BoolStamped()
                 finish_msg.header.stamp = rospy.Time.now()
-                finish_msg.data = True
-                self.pub_finish.publish(finish_msg)
-            
+                finish_msg.data = False
+                #self.pub_finish.publish(finish_msg)
+                self.cbFinishCoord(finish_msg)
+            return
 
     def pub_confrim_msg(self):
         # Finish planning, set fsm to next state
