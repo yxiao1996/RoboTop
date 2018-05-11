@@ -20,6 +20,8 @@
     <arg name="apriltag" default="false"/>
     <arg name="protocol_auto_flag" default="true"/>
 
+    <rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>
+
     <!-- Start Camera-->
     <group if="$(arg camera)">
         <node ns="$(arg veh)" name="usb_cam" pkg="uvc_camera" type="uvc_camera_node" output="screen">
@@ -86,6 +88,7 @@
     <group if="$(arg decoder)">
         <node ns="$(arg veh)" pkg="serial_decoder" type="serial_decoder_node.py" name="serial_decoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_decoder/serial_decoder_node/$(arg param_file_name).yaml"/>
+            <!--<rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>-->
         </node>
     </group>
 

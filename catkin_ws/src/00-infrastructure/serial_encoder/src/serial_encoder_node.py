@@ -83,12 +83,14 @@ class serial_encoder_node(object):
                                       0.0,
                                       button_1)
         # Write data to serial port
-        rospy.loginfo("*************************************************")
-        for i, datum in enumerate(data_list):
-            self.encoder.write(datum)
-            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
-        self.encoder.write(13)
-        self.encoder.write(10)
+        for k in range(10):
+            rospy.loginfo("*************************************************")
+            for i, datum in enumerate(data_list):
+                self.encoder.write(datum)
+                rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            self.encoder.write(13)
+            self.encoder.write(10)
+            rospy.sleep(0.05)
 
     def cbCtlData(self, msg, plot_everything=False):
         # check fsm state:

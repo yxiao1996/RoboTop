@@ -19,6 +19,8 @@ float64 theta
 """
 class odo_control_node(object):
     def __init__(self):
+        self.debug_flag = True
+        
         # Save the name of the node
         self.node_name = rospy.get_name()
         
@@ -55,7 +57,8 @@ class odo_control_node(object):
         self.sub_pose = rospy.Subscriber("~pose", Pose2DStamped, self.cbPose, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
+        self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -124,7 +127,22 @@ class odo_control_node(object):
         
         #self.rate.sleep()
 
-    def cbPose(self, msg, plot_pose=True):
+    def cbTimer(self, event):
+        #print "odom control timer"
+        if self.debug_flag == False:
+            return
+        # read robot state from parameter server
+        robot_state = rospy.get_param("/robot_state")
+        odom = robot_state[0]["odom"]
+        pose_msg = Pose2DStamped()
+        pose_msg.x = odom[0]
+        pose_msg.y = odom[1]
+        pose_msg.theta = odom[2]
+        self.cbPose(pose_msg, True, True)
+
+    def cbPose(self, msg, plot_pose=True, debug_flag=False):
+        if debug_flag == False:
+            return
         # Callback for pose message from decoder node
         if self.active == False:
             return

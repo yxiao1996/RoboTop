@@ -49,6 +49,8 @@ Vector3  angular
 
 class decoder_node(object):
     def __init__(self):
+        self.debug_flag = True
+        
         # Init Decoder
         self.baudrate = rospy.get_param("~baudrate")
         self.decoder = Decoder(self.baudrate)
@@ -209,6 +211,8 @@ class decoder_node(object):
             return
         #if len(data) > 0:
             #print data
+        #robot_state = rospy.get_param("/robot_state")
+        #print robot_state
         # Decode odometry data
         data_pre = data[0:2]
         data_post = data[-2:]
@@ -217,7 +221,7 @@ class decoder_node(object):
         try:
             # Check header and tail of each data segment
             if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
-                print struct.unpack('B', data_pre[0]), struct.unpack('B', data_pre[1])
+                #print struct.unpack('B', data_pre[0]), struct.unpack('B', data_pre[1])
                 return
             if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
                 return
@@ -266,6 +270,14 @@ class decoder_node(object):
             odo_msg.theta = rawValue[0]
             odo_msg.header.stamp = rospy.Time.now()
             self.pub_odo_msg.publish(odo_msg)
+
+            # update robot state parameter]
+            robot_state = rospy.get_param("/robot_state")
+            robot_state[0]["odom"][0] = -rawValue[3]
+            robot_state[0]["odom"][1] = rawValue[4]
+            robot_state[0]["odom"][2] = rawValue[0]
+            rospy.set_param("/robot_state", robot_state)
+            #print robot_state
         except: 
             return
 
