@@ -18,7 +18,7 @@
 
     <arg name="planner" default="false"/>
     <arg name="apriltag" default="false"/>
-    <arg name="protocol_auto_flag" default="true"/>
+    <arg name="protocol_auto_flag" default="false"/>
 
     <rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>
 

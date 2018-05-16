@@ -37,4 +37,4 @@
   1. ROS kinetic；
   2. OpenCV；
 
-Raspi Branch
+Remote Branch
