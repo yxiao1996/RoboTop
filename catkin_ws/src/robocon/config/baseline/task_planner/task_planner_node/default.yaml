@@ -1,19 +1,19 @@
 macro_tasks:
   macro_task_0:
       - path:
+          - [1500.0, 0.0, -90.0]
+        move:
+          "sleep"
+      - path:
+          - [1500.0, 1500.0, 180.0]
+        move:
+          "sleep"
+      - path:
+          - [0.0, 1500.0, 90.0]
+        move:
+          "sleep"
+      - path:
           - [0.0, 0.0, 0.0]
-        move:
-          "sleep"
-      - path:
-          - [0.0, 750.0, 0.0]
-        move:
-          "sleep"
-      - path:
-          - [750.0, 750.0, 0.0]
-        move:
-          "throw"
-      - path:
-          - [750.0, 0.0, 0.0]
         move:
           "sleep"
   macro_task_1: 

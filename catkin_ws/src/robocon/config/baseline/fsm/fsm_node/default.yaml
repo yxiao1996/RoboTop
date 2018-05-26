@@ -41,6 +41,7 @@ nodes:
   move_planner_node: "move_planner_node/switch"
   task_planner_node: "task_planner_node/switch"
   apriltag_node: "apriltag_node/switch"
+  visual_odometry_node: "visual_odometry_node/switch"
 
 states:
   JOYSTICK_CONTROL:
@@ -49,6 +50,8 @@ states:
     active_nodes:
     - detecter_node
     - encoder_node_js
+    - apriltag_node
+    #- visual_odometry_node
   PLANNING:
     transitions:
       planning_complete: "LINE_FOLLOWING"
@@ -71,3 +74,4 @@ states:
     - pid_control_node
     - move_planner_node
     - apriltag_node
+    - visual_odometry_node

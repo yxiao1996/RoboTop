@@ -265,16 +265,16 @@ class decoder_node(object):
 
             # Publish message to odometry controller
             odo_msg = Pose2DStamped()
-            odo_msg.x = -rawValue[3]
-            odo_msg.y = rawValue[4]
+            odo_msg.x = rawValue[3]
+            odo_msg.y = -rawValue[4]
             odo_msg.theta = rawValue[0]
             odo_msg.header.stamp = rospy.Time.now()
             self.pub_odo_msg.publish(odo_msg)
 
             # update robot state parameter]
             robot_state = rospy.get_param("/robot_state")
-            robot_state[0]["odom"][0] = -rawValue[3]
-            robot_state[0]["odom"][1] = rawValue[4]
+            robot_state[0]["odom"][0] = rawValue[3]
+            robot_state[0]["odom"][1] = -rawValue[4]
             robot_state[0]["odom"][2] = rawValue[0]
             rospy.set_param("/robot_state", robot_state)
             #print robot_state

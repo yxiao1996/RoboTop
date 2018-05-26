@@ -6,8 +6,10 @@ class SerialEncoder():
 
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
         #baudrate = 230400
-        self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
-        
+        try:
+            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        except:
+            self.ser = serial.Serial('/dev/ttyUSB1', baudrate=baudrate, timeout=1)
         # Debug
         print "Serial Port Configuration"
         print "bytesize: ", self.ser.bytesize

@@ -22,7 +22,7 @@ class apriltag_node(object):
         self.camera_x     = self.setupParam("~camera_x", 0.065)
         self.camera_y     = self.setupParam("~camera_y", 0.0)
         self.camera_z     = self.setupParam("~camera_z", 0.11)
-        self.camera_theta = self.setupParam("~camera_theta", 19.0)
+        self.camera_theta = self.setupParam("~camera_theta", 0.0) # 19
         self.scale_x     = self.setupParam("~scale_x", 1)
         self.scale_y     = self.setupParam("~scale_y", 1)
         self.scale_z     = self.setupParam("~scale_z", 1)
@@ -56,6 +56,7 @@ class apriltag_node(object):
          # Load tag detections message
         for detection in msg.detections:
             tag_id = int(detection.id)
+            self.checkProtocol(tag_id)
 
             # Define the transforms
             veh_t_camxout = tr.translation_matrix((self.camera_x, self.camera_y, self.camera_z))
@@ -100,7 +101,8 @@ class apriltag_node(object):
             tag_id_msg.data = tag_id
             self.pub_tagId.publish(tag_id_msg)
             
-            print detection
+            #print detection
+            print trans.x, trans.y, trans.z
             self.checkProtocol(tag_id)
             #print rot.z - yaw
             #print tag_id, trans, rot

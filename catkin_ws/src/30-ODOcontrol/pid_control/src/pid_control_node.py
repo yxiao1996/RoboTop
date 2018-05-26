@@ -4,6 +4,8 @@ from std_msgs.msg import String #Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, Twist2DStamped
 from dynamic_reconfigure.server import Server
 from pid_control.cfg import pidConfig
+import numpy as np
+import math
 
 def cbConfigure(config, level):
     rospy.loginfo("""Reconfigure Request: {kp}, {ki}, {kd}""".format(**config))
@@ -66,12 +68,20 @@ class PIDcontrolnode(object):
         if self.active == False:
             return
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
-	if msg.x == 0.0 and msg.y == 0.0 and msg.theta == 0.0:
-	    return
+	    if msg.x == 0.0 and msg.y == 0.0 and msg.theta == 0.0:
+	        return
         # Error
         err_x = msg.x - self.aim_pos_x
         err_y = msg.y - self.aim_pos_y
         err_theta = msg.theta - self.aim_pos_theta
+        complex_theta = True
+        if complex_theta:
+            comp_theta_goal = complex(np.cos(self.aim_pos_theta), np.sin(self.aim_pos_theta))
+            comp_theta = complex(np.cos(msg.theta), np.sin(msg.theta))
+            delta_theta = comp_theta / comp_theta_goal 
+            err_theta = np.angle(delta_theta)# / np.pi * 180.0
+            
+        rospy.loginfo("error x [%s] error y [%s] error theta [%s] cur theta [%s]" %(err_x, err_y, err_theta, msg.theta))
         # Integration value constrain
         intg_x_vule = self.ki*sum(self.intg_data_x)/self.intg_len
         intg_y_vule = self.ki*sum(self.intg_data_y)/self.intg_len
@@ -87,6 +97,13 @@ class PIDcontrolnode(object):
         self.vx = self.constrain(vx_temp,self.max_output_v)
         self.vy = self.constrain(vy_temp,self.max_output_v)
         self.omega = self.constrain(omega_temp,self.max_output_v)
+        position = complex(err_x, err_y)
+        angle_map = np.angle(position, deg=True)
+        angle_car = angle_map + msg.theta
+        control_effort = math.sqrt(self.vx**2 + self.vy**2)
+        self.vx = -control_effort * np.cos(angle_car * np.pi / 180.0)
+        self.vy = -control_effort * np.sin(angle_car * np.pi / 180.0)
+        rospy.loginfo("vx [%s] vy [%s] omega [%s]"%(self.vx, self.vy, self.omega))
         # Integration arrays update
         self.intg_data_x.append(err_x)
         if len(self.intg_data_x) > self.intg_len: #Constrain integration length
@@ -114,7 +131,7 @@ class PIDcontrolnode(object):
         self.aim_pos_x = msg.x
         self.aim_pos_y = msg.y
         self.aim_pos_theta = msg.theta
-        #rospy.loginfo("Aim position has updated as:\n x=%5.4f, y=%5.4f, theta=%5.4f" %(msg.x,msg.y,msg.theta))
+        rospy.loginfo("Aim position has updated as:\n x=%5.4f, y=%5.4f, theta=%5.4f" %(msg.x,msg.y,msg.theta))
 
     def cbTimer(self,event):
         if self.active == False:

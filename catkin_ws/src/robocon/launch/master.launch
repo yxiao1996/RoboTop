@@ -57,14 +57,17 @@
 
         <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
             <remap from="/Robo/move_planner_node/set_move" to="/Robo/task_planner_node/set_move"/>
+            <remap from="/Robo/move_planner_node/finish_coord" to="/Robo/apriltag_node/coord"/>
         </node>
     </group>
 
     <!-- Start Joystick -->
     <group if="$(arg joystick)">
+        <!--
         <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen">
             <param name="deadzone" value="0.1"/>
         </node>
+        -->
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
@@ -174,6 +177,8 @@
 
     <!-- Start Visual Odometry -->
     <group if="$(arg viz_odom)">
-        <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen">
+            <remap from="~image" to="image_raw"/>
+        </node>
     </group>
 </launch>

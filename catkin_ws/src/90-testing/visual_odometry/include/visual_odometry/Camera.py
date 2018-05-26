@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 class Camera():
     def __init__(self):
-        f = open('/home/yxiao1996/.ros/camera_info/head_camera.yaml')
+        f = open('/home/pi/.ros/camera_info/camera.yaml')
         self.config = yaml.load(f)
         self.w = self.config["image_width"]
         self.h = self.config["image_height"]

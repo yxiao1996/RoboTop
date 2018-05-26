@@ -5,6 +5,7 @@ from std_msgs.msg import String #Imports msg
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from robocon_msgs.msg import JoyAuto, JoyRemote, BoolStamped
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class JoyMapperNode(object):
     def __init__(self):
@@ -24,6 +25,9 @@ class JoyMapperNode(object):
         self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
+        # Setup service
+        self.srv_joy = rospy.Service("~set_joy", Empty, self.cbSrvJoy)
+        
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -39,6 +43,14 @@ class JoyMapperNode(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         #rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbSrvJoy(self, req):
+        # joystick override True button
+        joy_override_msg = BoolStamped()
+        joy_override_msg.header.stamp = rospy.Time.now()
+        joy_override_msg.data = True
+        self.pub_buttons.publish(joy_override_msg)
+        return EmptyResponse()
 
     def cbJoy(self,joy_msg):
         self.joy = joy_msg
