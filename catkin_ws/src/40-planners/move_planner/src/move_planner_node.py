@@ -69,7 +69,9 @@ class MovePlanner(object):
         move_msg.data = self.move
         self.pub_move.publish(move_msg)
         if self.move == 'sleep':
-            rospy.sleep(5)
+            rospy.sleep(3)
+        else:
+            rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
         # Publish confirm message to task planner
         conf_msg = BoolStamped()

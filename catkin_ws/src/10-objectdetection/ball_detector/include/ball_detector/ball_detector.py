@@ -153,7 +153,7 @@ class BallDetector():
 
     def _HoughCircle(self, img):
         circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,2,20,
-                                   param1=200,param2=110,minRadius=0,maxRadius=0)
+                                   param1=200,param2=80,minRadius=0,maxRadius=0)
         if circles is not None:
             circles = np.int16(np.around(circles))
         else:

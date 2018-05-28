@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from serial_encoder.encoder import SerialEncoder as Encoder
-from serial_encoder.translater import translateAuto, translateRemote, translateCTLtoJoy
+from serial_encoder.translater import translateAuto, translateRemote, translateCTLtoAuto, translateCTLtoRemote, translateCTLtoMove
 from robocon_msgs.msg import CCD_data, Twist2DStamped, JoyRemote, JoyAuto, BoolStamped
 import numpy as np
 import matplotlib.pyplot as plt 
@@ -70,43 +70,59 @@ class serial_encoder_node(object):
         # send move according to message
         move = msg.data
         if move == "sleep":
-            button_0 = 0.0
+            button_1 = 0.0
         else:
             if move == "throw":
-                button_0 = 1.0
+                button_1 = 1.0
             else:
                 return
-        data_list = translateCTLtoJoy(0.0,
+        data_list = translateCTLtoMove(-0.2, # fetch position
+                                      0.6,   # release position
+                                      0.0,   # fetch speed
+                                      0.0,   # release speed
                                       0.0,
-                                      0.0,
-                                      0.0,   # Temp set phi, button1, button2 to zero
-                                      button_0,
-                                      0.0)
+                                      button_1)
         # Write data to serial port
-        rospy.loginfo("*************************************************")
-        for i, datum in enumerate(data_list):
-            self.encoder.write(datum)
-            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
-        self.encoder.write(13)
-        self.encoder.write(10)
+        for t in range(5):
+            rospy.loginfo("*************************************************")
+            for i, datum in enumerate(data_list):
+                self.encoder.write(datum)
+                rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            self.encoder.write(13)
+            self.encoder.write(10)
+
+            rospy.sleep(0.1)
 
     def cbCtlData(self, msg, plot_everything=False):
         # check fsm state:
         if self.joystick_state == True:
             return
         
-        # Translate data from Twisted2D to Joy6channel
-        data_list = translateCTLtoJoy(msg.v_x/2.0,
-                                      msg.v_y/2.0,
-                                      msg.omega/2.0,
-                                      0.0,   # Temp set phi, button1, button2 to zero
-                                      0.0,
-                                      0.0)
-        
-        # Check protocol
-        if len(data_list) != 6:
-            print "length data list: ", len(data_list)
-            raise Exception("Serial Protocol not matched!")
+        # check protocol type
+        if self.protocol_auto_flag:
+            # Using protocol for auto-control
+            # Translate data from Twisted2D to JoyRemote
+            data_list = translateCTLtoRemote(msg.v_x/2.0,
+                                        msg.v_y/2.0,
+                                        msg.omega/2.0)
+            
+            # Check protocol
+            if len(data_list) != len(self.protocol):
+                print "length data list: ", len(data_list)
+                raise Exception("Serial Protocol not matched!")
+        else:
+            # Translate data from Twisted2D to JoyRemote
+            data_list = translateCTLtoRemote(msg.v_x/2.0,
+                                        msg.v_y/2.0,
+                                        msg.omega/2.0,
+                                        0.0,   # Temp set phi, button1, button2 to zero
+                                        0.0,
+                                        0.0)
+            
+            # Check protocol
+            if len(data_list) != len(self.protocol):
+                print "length data list: ", len(data_list)
+                raise Exception("Serial Protocol not matched!")
 
         # Display
         if plot_everything:

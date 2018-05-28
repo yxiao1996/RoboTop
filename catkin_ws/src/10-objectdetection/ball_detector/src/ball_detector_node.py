@@ -33,7 +33,7 @@ class ballDetectorNode():
             img1 = self.detector.getImage()
             img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
             debug = cv2.cvtColor(debug, cv2.COLOR_GRAY2RGB)
-            image_msg = self.bridge.cv2_to_imgmsg(debug, 'rgb8')
+            image_msg = self.bridge.cv2_to_imgmsg(img1, 'rgb8')
             self.pub_debug.publish(image_msg)
             #cv2.imshow('image', img1)
             #cv2.waitKey(2)

@@ -1,8 +1,9 @@
 <launch>
     <include file="$(find robocon)/launch/master.launch">
-        <arg name="fsm" value="true"/>
+        <arg name="fsm" value="false"/>
         <arg name="joystick" value="true"/>
         <arg name="encoder" value="false"/>
 	<arg name="decoder" value="false"/>
+        <arg name="protocol_auto_flag" default="false"/>
     </include>
 </launch>
