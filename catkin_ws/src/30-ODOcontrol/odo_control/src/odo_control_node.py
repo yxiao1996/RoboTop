@@ -163,7 +163,11 @@ class odo_control_node(object):
         # error
         error_x = x - self.x_goal
         error_y = y - self.y_goal
-        error_theta = theta - self.theta_goal
+        #error_theta = theta - self.theta_goal
+        comp_theta_goal = complex(np.cos(self.theta_goal * np.pi / 180.0), np.sin(self.theta_goal * np.pi / 180.0))
+        comp_theta = complex(np.cos(theta * np.pi / 180.0), np.sin(theta * np.pi / 180.0))
+        delta_theta = comp_theta / comp_theta_goal
+        error_theta = np.angle(delta_theta) / np.pi * 180.0
         # Check at goal
         if abs(error_theta) < self.theta_thresh:
             if abs(error_x) < 100.0 and abs(error_y) < 100.0:
@@ -228,10 +232,10 @@ class odo_control_node(object):
                     omega = 0.2
         complex_omega = True
         if complex_omega:
-            comp_theta_goal = complex(np.cos(self.theta_goal * np.pi / 180.0), np.sin(self.theta_goal * np.pi / 180.0))
-            comp_theta = complex(np.cos(theta * np.pi / 180.0), np.sin(theta * np.pi / 180.0))
-            delta_theta = comp_theta / comp_theta_goal
-            error_theta = np.angle(delta_theta) / np.pi * 180.0
+            #comp_theta_goal = complex(np.cos(self.theta_goal * np.pi / 180.0), np.sin(self.theta_goal * np.pi / 180.0))
+            #comp_theta = complex(np.cos(theta * np.pi / 180.0), np.sin(theta * np.pi / 180.0))
+            #delta_theta = comp_theta / comp_theta_goal
+            #error_theta = np.angle(delta_theta) / np.pi * 180.0
             rospy.loginfo("[%s] error theta [%s]"%(self.node_name, error_theta))
             if abs(error_theta) < self.theta_thresh:
                 omega = 0.0

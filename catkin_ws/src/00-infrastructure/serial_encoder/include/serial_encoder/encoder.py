@@ -19,7 +19,10 @@ class SerialEncoder():
         print "stopbits: ",  self.ser.stopbits
 
     def write(self, data):
-        self.ser.write(chr(data))
+        try:
+            self.ser.write(chr(data))
+        except:
+            return
 
 if __name__ == '__main__':
     e = SerialEncoder()

@@ -140,7 +140,7 @@ class task_planner_node(object):
         try:
             self.current_task = self.current_macro_task.pop()
             #self.current_task = self.macro_tasks['macro_task_0'].pop()
-            rospy.loginfo("[%s] pop next task" %(self.node_name))
+            rospy.loginfo("[%s] pop next task [%s]" %(self.node_name, self.current_task))
             # Publish finish message
             finish_msg = BoolStamped()
             finish_msg.header.stamp = rospy.Time.now()

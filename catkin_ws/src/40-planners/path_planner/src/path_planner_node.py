@@ -70,7 +70,7 @@ class PathPlanner(object):
         # Pop next goal on path
         try:
             # If we can pop another goal
-            print "pop!"
+            rospy.loginfo("[%s] reach destination, pop next goal"%(self.node_name))
             self.goal = self.path.pop()
             if not debug:
                 goal_msg = Pose2DStamped()
