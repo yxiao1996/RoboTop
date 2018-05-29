@@ -1,34 +1,45 @@
 macro_tasks:
-  macro_task_0: 
+  macro_task_0:
       - path:
-          - [1500.0, 4000.0, -90.0]
-        move:
-          "close_left"
-      - path:
-          - [1500.0, 4000.0, -90.0]
+          - [0.0, 2000.0, 90.0]
         move:
           "sleep"
       - path:
-          - [1500.0, 4000.0, -90.0]
-        move:
-          "open_left"
-      - path:
-          - [1500.0, -3000.0, 90.0]
+          - [2000.0, 2000.0, 180.0]
         move:
           "close_left"
       - path:
-          - [1500.0, -3000.0, 90.0]
+          - [2000.0, 2000.0, 180.0]
         move:
           "sleep"
       - path:
-          - [1500.0, -3000.0, 90.0]
+          - [2000.0, 2000.0, 180.0]
+        move:
+          "open_left" 
+      - path:
+          - [2000.0, 0.0, -90.0]
+        move:
+          "close_left"
+      - path:
+          - [2000.0, 0.0, -90.0]
+        move:
+          "sleep"
+      - path:
+          - [2000.0, 0.0, -90.0]
         move:
           "open_left"
-     
+      - path:
+          - [0.0, 0.0, 0.0]
+        move:
+          "close_left"
       - path:
           - [0.0, 0.0, 0.0]
         move:
           "sleep"
+      - path:
+          - [0.0, 0.0, 0.0]
+        move:
+          "open_left"
   macro_task_1: 
       - path:
           - [0.0, 1000.0, 0.0]

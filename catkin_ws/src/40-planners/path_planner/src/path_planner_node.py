@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, Pose2DList, FSMState
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class PathPlanner(object):
     def __init__(self):
@@ -27,6 +28,10 @@ class PathPlanner(object):
         self.sub_reach_goal = rospy.Subscriber("~reach_goal", BoolStamped, self.cbNextGoal)
         self.sub_set_path = rospy.Subscriber("~set_path", Pose2DList, self.cbSetPath)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
+
+        # Setup Service
+        self.srv_path_fin = rospy.ServiceProxy("/task_planner/path_fin", Empty)
+
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -88,6 +93,7 @@ class PathPlanner(object):
                 reach_msg = BoolStamped()
                 reach_msg.header.stamp = rospy.Time.now()
                 reach_msg.data = True
+                #self.srv_path_fin()
                 self.pub_reach_dest.publish(reach_msg)
 
     def on_shutdown(self):

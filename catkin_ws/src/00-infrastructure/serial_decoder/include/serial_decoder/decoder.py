@@ -43,7 +43,7 @@ class Decoder():
                 else:
                     #print "**"
                     data_list.append(msg)
-                    msg = self.ser.read(length-4)
+                    msg = self.ser.read(length)
                     data_list.append(msg)
                     msg = self.ser.read()
                     data = struct.unpack('B', msg)[0]

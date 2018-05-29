@@ -3,6 +3,7 @@ import copy
 import rospy
 from std_msgs.msg import String, Float64MultiArray#Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DList, Pose2DStamped, FSMState
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class task_planner_node(object):
     def __init__(self):
@@ -48,6 +49,11 @@ class task_planner_node(object):
         self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         self.sub_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
+        
+        # Setup serivice
+        self.srv_move_fin = rospy.Service("/task_planner/move_fin", Empty, self.cbSrvMoveFin)
+        self.srv_move_fin = rospy.Service("/task_planner/path_fin", Empty, self.cbSrvPathFin)
+
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -68,6 +74,18 @@ class task_planner_node(object):
 
     def cbState(self, msg):
         self.state = msg.state
+
+    def cbSrvMoveFin(self, req):
+        msg = BoolStamped()
+        msg.data = True
+        self.cbFinishMove(msg)
+        return EmptyResponse()
+
+    def cbSrvPathFin(self, req):
+        msg = BoolStamped()
+        msg.data = True
+        self.cbFinishPath(msg)
+        return EmptyResponse()
 
     def cbFinishCoord(self, msg):
         if not self.state == "AT_GOAL":

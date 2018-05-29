@@ -1,7 +1,7 @@
 baudrate: 115200
-total_length: 28
-data_length: [0, 0, 28]
+total_length: 26
+data_length: [2, 0, 24]
 data_order: ["verify", "ccd", "odo"]
-verify_switch: False
+verify_switch: True
 ccd_switch: False
 odo_switch: True

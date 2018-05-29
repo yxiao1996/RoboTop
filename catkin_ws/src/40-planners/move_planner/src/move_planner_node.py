@@ -35,6 +35,9 @@ class MovePlanner(object):
         self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
         self.fetch = rospy.ServiceProxy('/Robo/serial_encoder_node/fetch', Empty)
         self.release = rospy.ServiceProxy('/Robo/serial_encoder_node/release', Empty)
+        self.open_left = rospy.ServiceProxy('/Robo/serial_encoder_node/open_left', Empty)
+        self.close_left = rospy.ServiceProxy('/Robo/serial_encoder_node/close_left', Empty)
+        self.move_fin = rospy.ServiceProxy('/task_planner/move_fin', Empty)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -75,24 +78,32 @@ class MovePlanner(object):
         # move_msg.data = self.move
         #self.pub_move.publish(move_msg)
         if self.move == 'sleep':
-            rospy.sleep(5)
+            rospy.loginfo("start sleep")
+            rospy.sleep(rospy.Duration.from_sec(5))
         elif self.move == 'throw':
             rospy.sleep(10)
         elif self.move == 'joy':
             self.set_joy()
         elif self.move == 'fetch':
-            self.release()
-            return
+            #self.release()
+            self.open_left()
             rospy.sleep(rospy.Duration.from_sec(10.0))
-            self.fetch()
+            #self.fetch()
+            self.close_left()
+        elif self.move == 'open_left':
+            self.open_left()
+        elif self.move == 'close_left':
+            self.close_left()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
         # Publish confirm message to task planner
-        conf_msg = BoolStamped()
-        conf_msg.header.stamp = rospy.Time.now()
-        conf_msg.data = True
-        self.pub_finish.publish(conf_msg)
+        self.move_fin()
+        #conf_msg = BoolStamped()
+        #conf_msg.header.stamp = rospy.Time.now()
+        #conf_msg.data = True
+        #self.pub_finish.publish(conf_msg)
+        
         # Publish message to fsm enter planning state
         #rospy.sleep(2)
         #self.pub_enter_planning.publish(conf_msg)

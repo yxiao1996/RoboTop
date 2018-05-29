@@ -100,15 +100,27 @@ class serial_encoder_node(object):
         return EmptyResponse()
     
     def cbSrvOpenLeft(self, req):
+        release_msg = String()
+        release_msg.data = "open_left"
+        self.cbMove(release_msg)
         return EmptyResponse()
 
     def cbSrvOpenRight(self, req):
+        release_msg = String()
+        release_msg.data = "open_right"
+        self.cbMove(release_msg)
         return EmptyResponse()
 
     def cbSrvCloseLeft(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "close_left"
+        self.cbMove(fetch_msg)
         return EmptyResponse()
 
     def cbSrvCloseRight(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "close_right"
+        self.cbMove(fetch_msg)
         return EmptyResponse()
 
     def cbMove(self, msg):
@@ -123,6 +135,14 @@ class serial_encoder_node(object):
             elif move == "release":
                 self.button_0 = button_0 = 1.0
                 self.button_1 = button_1 = 1.0
+            elif move == "open_left":
+                self.button_0 = button_0 = 1.0
+            elif move == "close_left":
+                self.button_0 = button_0 = 0.0
+            elif move == "open_right":
+                self.botton_1 = botton_1 = 1.0
+            elif move == "close_right":
+                self.botton_1 = botton_1 = 0.0
             else:
                 return
         #data_list = translateCTLtoMove(-0.2, # fetch position
@@ -135,9 +155,9 @@ class serial_encoder_node(object):
                                 0.0,
                                 0.0,
                                 0.0,
-                                 button_0,
-                                 button_1)
-        print "!!!debug!!!", button_0, button_1
+                                 self.button_0,
+                                 self.button_1)
+        #print "!!!debug!!!", button_0, button_1
         # Write data to serial port
         for k in range(10):
             rospy.loginfo("*************************************************")

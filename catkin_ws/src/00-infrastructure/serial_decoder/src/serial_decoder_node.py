@@ -144,7 +144,9 @@ class decoder_node(object):
         plot.plot_bar(bars, self.axes, display_encoder=False)
         plt.pause(0.000001)
 
-    def parse_data(self, data_list):
+    def parse_data(self, data_list_raw):
+        data_list = data_list_raw[2]
+        #rospy.loginfo("data list %s"%(data_list))
         segment_1 = data_list[0 : self.data_length[0]]
         segment_2 = data_list[self.data_length[0] : self.data_length[0]+self.data_length[1]]
         segment_3 = data_list[self.data_length[0]+self.data_length[1] : self.total_length]
@@ -153,6 +155,7 @@ class decoder_node(object):
         # Parse data list
         for i, segment in enumerate(data_segments):
             if self.data_order[i] == "verify":
+                #print segment
                 self.verify(segment)
             if self.data_order[i] == "ccd":
                 self.ccd_process(segment)
@@ -170,7 +173,17 @@ class decoder_node(object):
         # Display
         if plot_everything:
             self.display(data_list)
-
+        
+        try: 
+            # Check protocal
+            assert len(data_list) == self.data_length[0]
+            for raw in data_list:
+                data = struct.unpack('B', "".join(raw))[0]
+                rospy.loginfo("revice ack info [%s]"%(data))
+        except Exception as e:
+            rospy.loginfo(e)
+        return
+        
         # Debug message
         joy_msg = Joy()        
         debug_0 = float(data_list[0]) / 128.0 - 1.0
@@ -214,26 +227,26 @@ class decoder_node(object):
         #robot_state = rospy.get_param("/robot_state")
         #print robot_state
         # Decode odometry data
-        data_pre = data[0:2]
-        data_post = data[-2:]
-        odom_data = data[2]
-        
+        #data_pre = data[0:2]
+        #data_post = data[-2:]
+        #odom_data = data[2]
+        odom_data = data
         try:
             # Check header and tail of each data segment
-            if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
+            #if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
                 #print struct.unpack('B', data_pre[0]), struct.unpack('B', data_pre[1])
-                return
-            if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
-                return
+            #    return
+            #if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
+            #    return
 
             rawValue = []
-            for i in range(len(odom_data) / 4):
+            for i in range(self.data_length[2] / 4):
                 neg_raw = odom_data[i*4:(i+1)*4]
                 pos_raw = neg_raw[::-1]
                 raw = struct.unpack('f', "".join(neg_raw))[0]
                 rawValue.append(raw)
 
-            print "%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]) 
+            rospy.loginfo("%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]))
             
             check = True
             if check:
@@ -250,7 +263,8 @@ class decoder_node(object):
                     self.odo_buffer[2] = theta
                     if abs(delta_x) > 700 or abs(delta_y) > 700 or abs(delta_theta) > 30:
                         return
-                except:
+                except Exception as e:
+                    print e
                     return
 
             debug = False
@@ -278,7 +292,9 @@ class decoder_node(object):
             robot_state[0]["odom"][2] = rawValue[0]
             rospy.set_param("/robot_state", robot_state)
             #print robot_state
-        except: 
+        except Exception as e:
+            print e
+            rospy.loginfo("unable to decode odometry")
             return
 
     def on_shutdown(self):

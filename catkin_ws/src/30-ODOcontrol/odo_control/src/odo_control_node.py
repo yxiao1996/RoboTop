@@ -195,7 +195,7 @@ class odo_control_node(object):
                 else:
                     v_y = 0.0
         sigmoid_p_control = True
-        sigmoid_scalar = 2000.0
+        sigmoid_scalar = 2500.0
         dead_zone = 20.0
         if sigmoid_p_control:
             print "*"
@@ -215,8 +215,8 @@ class odo_control_node(object):
             else:
                 #self.trigger = False
                 control_effort = self.sigmoid(res_distance)
-                v_x = -control_effort * np.cos(angle_car * np.pi / 180.0) / 1.0 #(res_error_x / res_distance)
-                v_y = -control_effort * np.sin(angle_car * np.pi / 180.0) / 1.0#(res_error_y / res_distance)
+                v_x = -control_effort * np.cos(angle_car * np.pi / 180.0) * 1.5 #(res_error_x / res_distance)
+                v_y = -control_effort * np.sin(angle_car * np.pi / 180.0) * 1.5#(res_error_y / res_distance)
 
         # Maintain the same frame with odometry
         simple_omega = False
@@ -237,12 +237,21 @@ class odo_control_node(object):
             #delta_theta = comp_theta / comp_theta_goal
             #error_theta = np.angle(delta_theta) / np.pi * 180.0
             rospy.loginfo("[%s] error theta [%s]"%(self.node_name, error_theta))
+            
             if abs(error_theta) < self.theta_thresh:
                 omega = 0.0
+            #else:
+            #    omega = -self.sigmoid(error_theta / 90.0) * 1.0
             elif error_theta > 0.0:
-                omega = -0.2
+                if abs(error_theta) > 10.0:
+                    omega = -0.3
+                else:
+                    omega = -0.1
             else:
-                omega = 0.2
+                if abs(error_theta) > 10.0:
+                    omega = 0.3
+                else:
+                    omega = 0.1
 
         # fuzzy controller
         use_fuzzy = False
