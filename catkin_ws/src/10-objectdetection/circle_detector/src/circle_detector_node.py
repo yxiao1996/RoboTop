@@ -7,6 +7,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CompressedImage, Image
 from robocon_msgs.msg import BoolStamped
 from sklearn import mixture
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class CircleDetectorNode():
     def __init__(self):
@@ -27,9 +28,18 @@ class CircleDetectorNode():
         # Subscribers
         self.sub_trigger = rospy.Subscriber("~trigger", BoolStamped, self.cbTrigger, queue_size=1)
         self.sub_image = rospy.Subscriber("/image_raw/compressed", CompressedImage, self.cbImage, queue_size=20)
+
+        # Setup Service
+        self.srv_find_circle = rospy.Service("~find_circle", Empty, self.cbSrvFind)
         # Timers
         rospy.Timer(rospy.Duration.from_sec(1.0/self.framerate), self.mainLoop)
     
+    def cbSrvFind(self, req):
+        msg = BoolStamped()
+        msg.data = True
+        self.cbTrigger(msg)
+        return EmptyResponse
+
     def cbTrigger(self, msg):
         self.trigger = msg.data
         if msg.data == True:
@@ -74,7 +84,8 @@ class CircleDetectorNode():
         self.trigger = False
         rospy.loginfo("[%s] fitting data" %(self.node_name))
         # fit the data using gaussian mixture
-        clf = mixture.gmm(n_components=2, covariance_type='full')
+        #clf = mixture.gmm(n_components=2, covariance_type='full')
+        clf = mixture.GaussianMixture(n_components=2, covariance_type='full')
         clf.fit(self.data)
         # Publish set ref message to filter
         set_msg = BoolStamped()
