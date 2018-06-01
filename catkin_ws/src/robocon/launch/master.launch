@@ -63,11 +63,11 @@
 
     <!-- Start Joystick -->
     <group if="$(arg joystick)">
-        <!--
+        
         <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen">
             <param name="deadzone" value="0.1"/>
         </node>
-        -->
+       
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>

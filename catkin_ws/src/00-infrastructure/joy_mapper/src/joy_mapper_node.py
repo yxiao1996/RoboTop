@@ -56,7 +56,7 @@ class JoyMapperNode(object):
         self.joy = joy_msg
         self.publishControl()
         self.processButtons(joy_msg)
-        #rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
+        rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
 
     def publishControl(self):
         button_scalar = 0.4
