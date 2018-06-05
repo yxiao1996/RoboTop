@@ -22,7 +22,7 @@ class apriltag_node(object):
         self.camera_x     = self.setupParam("~camera_x", 0.065)
         self.camera_y     = self.setupParam("~camera_y", 0.0)
         self.camera_z     = self.setupParam("~camera_z", 0.11)
-        self.camera_theta = self.setupParam("~camera_theta", 19.0)
+        self.camera_theta = self.setupParam("~camera_theta", 0.0) # 19
         self.scale_x     = self.setupParam("~scale_x", 1)
         self.scale_y     = self.setupParam("~scale_y", 1)
         self.scale_z     = self.setupParam("~scale_z", 1)
@@ -56,6 +56,7 @@ class apriltag_node(object):
          # Load tag detections message
         for detection in msg.detections:
             tag_id = int(detection.id)
+            self.checkProtocol(tag_id)
 
             # Define the transforms
             veh_t_camxout = tr.translation_matrix((self.camera_x, self.camera_y, self.camera_z))
@@ -81,13 +82,13 @@ class apriltag_node(object):
             (trans.x, trans.y, trans.z) = tr.translation_from_matrix(veh_T_tagxout)
             (rot.x, rot.y, rot.z, rot.w) = tr.quaternion_from_matrix(veh_T_tagxout)
 
-            frame_name = '/carrot'+str(tag_id)
+            frame_name = '/tag'+str(tag_id)
             try:
-                (trans_tf,rot_tf) = self.listener.lookupTransform('/turtle1', frame_name, rospy.Time(0))
+                (trans_tf,rot_tf) = self.listener.lookupTransform('/ducky1', frame_name, rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                     continue
             rot_tf_rpy = tf.transformations.euler_from_quaternion(rot_tf)
-            yaw = rot_tf_rpy[2] / 3.14
+            yaw = rot_tf_rpy[2] / np.pi
             # Check phase
             if tag_id == 3:
                 # Back of the objet, phase confusion
@@ -100,7 +101,8 @@ class apriltag_node(object):
             tag_id_msg.data = tag_id
             self.pub_tagId.publish(tag_id_msg)
             
-            print detection
+            #print detection
+            print detection #trans.x, trans.y, trans.z
             self.checkProtocol(tag_id)
             #print rot.z - yaw
             #print tag_id, trans, rot
@@ -109,9 +111,9 @@ class apriltag_node(object):
         if len(msg.detections) > 0:
             # Broadcast tranform
             self.broadcaster.sendTransform((trans.x, trans.y, trans.z),
-                                            tf.transformations.quaternion_from_euler(0, 0, 3.14*(rot_z_buf-yaw_buf)/float(len(msg.detections))),
+                                            tf.transformations.quaternion_from_euler(0, 0, np.pi*(rot_z_buf-yaw_buf)/float(len(msg.detections))),
                                             rospy.Time.now(),
-                                            "turtle1",
+                                            "ducky1",
                                             "camera")
 
     def checkProtocol(self, tag_id):

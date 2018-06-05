@@ -3,7 +3,7 @@ import rospy
 import math
 import tf
 import numpy as np
-from fuzzy_controllers import OmegaControl
+#from fuzzy_controllers import OmegaControl
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist
@@ -19,6 +19,8 @@ float64 theta
 """
 class odo_control_node(object):
     def __init__(self):
+        self.debug_flag = True
+        
         # Save the name of the node
         self.node_name = rospy.get_name()
         
@@ -55,7 +57,8 @@ class odo_control_node(object):
         self.sub_pose = rospy.Subscriber("~pose", Pose2DStamped, self.cbPose, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
+        self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -124,7 +127,22 @@ class odo_control_node(object):
         
         #self.rate.sleep()
 
-    def cbPose(self, msg, plot_pose=True):
+    def cbTimer(self, event):
+        #print "odom control timer"
+        if self.debug_flag == False:
+            return
+        # read robot state from parameter server
+        robot_state = rospy.get_param("/robot_state")
+        odom = robot_state[0]["odom"]
+        pose_msg = Pose2DStamped()
+        pose_msg.x = odom[0]
+        pose_msg.y = odom[1]
+        pose_msg.theta = odom[2]
+        self.cbPose(pose_msg, True, True)
+
+    def cbPose(self, msg, plot_pose=True, debug_flag=False):
+        if debug_flag == False:
+            return
         # Callback for pose message from decoder node
         if self.active == False:
             return
@@ -145,10 +163,14 @@ class odo_control_node(object):
         # error
         error_x = x - self.x_goal
         error_y = y - self.y_goal
-
+        #error_theta = theta - self.theta_goal
+        comp_theta_goal = complex(np.cos(self.theta_goal * np.pi / 180.0), np.sin(self.theta_goal * np.pi / 180.0))
+        comp_theta = complex(np.cos(theta * np.pi / 180.0), np.sin(theta * np.pi / 180.0))
+        delta_theta = comp_theta / comp_theta_goal
+        error_theta = np.angle(delta_theta) / np.pi * 180.0
         # Check at goal
-        if abs(theta) < self.theta_thresh:
-            if abs(error_x) < 50.0 and abs(error_y) < 50.0:
+        if abs(error_theta) < self.theta_thresh:
+            if abs(error_x) < 100.0 and abs(error_y) < 100.0:
                 reach_msg = BoolStamped()
                 reach_msg.header.stamp = rospy.Time.now()
                 reach_msg.data = True
@@ -181,6 +203,11 @@ class odo_control_node(object):
             res_error_y = error_y / sigmoid_scalar
             res_deadzone = 0.05
             res_distance = math.sqrt(res_error_x**2 + res_error_y**2)
+            print res_error_x, res_error_y, res_distance
+            position = complex(res_error_x, res_error_y)
+            angle_map = np.angle(position, deg=True)
+            angle_car = angle_map + theta
+            print angle_car
             #trigger = False
             if res_distance < res_deadzone:
                 v_x = 0.0
@@ -188,21 +215,35 @@ class odo_control_node(object):
             else:
                 #self.trigger = False
                 control_effort = self.sigmoid(res_distance)
-                v_x = -control_effort * (res_error_x / res_distance)
-                v_y = -control_effort * (res_error_y / res_distance)
+                v_x = -control_effort * np.cos(angle_car * np.pi / 180.0) / 1.0 #(res_error_x / res_distance)
+                v_y = -control_effort * np.sin(angle_car * np.pi / 180.0) / 1.0#(res_error_y / res_distance)
 
         # Maintain the same frame with odometry
-        simple_omega = True
+        simple_omega = False
         if simple_omega:
-            if abs(theta) <self.theta_thresh:
+            if abs(theta-self.theta_goal) <self.theta_thresh:
                 omega = 0.0
             else:
-                v_x = 0.0
-                v_y = 0.0
-                if theta > 0:
-                    omega = -0.1
+                #v_x = 0.0
+                #v_y = 0.0
+                if theta-self.theta_goal > 0:
+                    omega = -0.2
                 else:
-                    omega = 0.1
+                    omega = 0.2
+        complex_omega = True
+        if complex_omega:
+            #comp_theta_goal = complex(np.cos(self.theta_goal * np.pi / 180.0), np.sin(self.theta_goal * np.pi / 180.0))
+            #comp_theta = complex(np.cos(theta * np.pi / 180.0), np.sin(theta * np.pi / 180.0))
+            #delta_theta = comp_theta / comp_theta_goal
+            #error_theta = np.angle(delta_theta) / np.pi * 180.0
+            rospy.loginfo("[%s] error theta [%s]"%(self.node_name, error_theta))
+            if abs(error_theta) < self.theta_thresh:
+                omega = 0.0
+            elif error_theta > 0.0:
+                omega = -0.2
+            else:
+                omega = 0.2
+
         # fuzzy controller
         use_fuzzy = False
         if use_fuzzy:

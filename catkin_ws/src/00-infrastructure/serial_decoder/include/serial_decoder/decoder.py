@@ -14,7 +14,11 @@ class Decoder():
         
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
         #baudrate = 230400
-        self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        try:
+            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        except:
+            com = '/dev/ttyUSB1'
+            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
 
     def read_debug(self, length=6):
         self.ser.flushInput()

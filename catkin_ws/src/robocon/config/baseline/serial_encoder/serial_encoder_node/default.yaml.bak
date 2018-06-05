@@ -1,0 +1,12 @@
+serial_protocol:
+   - "channel_0"
+   - "channel_1"
+   - "channel_2"
+   - "channel_3"
+   - "channel_4"
+   - "channel_5"
+   - "channel_6"
+   - "channel_7"
+   - "channel_8"
+baudrate: 115200
+update_frequency: 10

@@ -123,12 +123,24 @@ class serial_encoder_node(object):
         data_list = translate(msg.channel_0/3.0,
                               -msg.channel_1/3.0,
                               msg.channel_2/3.0,
+<<<<<<< HEAD
                               msg.channel_3/3.0,
                               msg.button_0,
                               msg.button_1)
         
         # Check protocol
         if len(data_list) != len(self.protocol):
+=======
+                              msg.channel_3,
+                              msg.channel_4,
+                              msg.channel_5,
+                              msg.channel_6,
+                              msg.channel_7,
+                              msg.channel_8)
+        
+        # Check protocol
+        if len(data_list) != 9:
+>>>>>>> 9cf6960f7ba23b2712634386ca2513bf879c1f96
             print "length data list: ", len(data_list)
             print "length protocol: ", len(self.protocol)
             raise Exception("Serial Protocol not matched!")
@@ -183,4 +195,8 @@ if __name__ == '__main__':
     rospy.on_shutdown(node.on_shutdown)
     
     # Keep it spinning to keep the node alive
+<<<<<<< HEAD
     rospy.spin()
+=======
+    rospy.spin()
+>>>>>>> 9cf6960f7ba23b2712634386ca2513bf879c1f96

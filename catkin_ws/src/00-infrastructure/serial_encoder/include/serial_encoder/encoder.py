@@ -6,8 +6,10 @@ class SerialEncoder():
 
     def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
         #baudrate = 230400
-        self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
-        
+        try:
+            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        except:
+            self.ser = serial.Serial('/dev/ttyUSB1', baudrate=baudrate, timeout=1)
         # Debug
         print "Serial Port Configuration"
         print "bytesize: ", self.ser.bytesize
@@ -17,7 +19,10 @@ class SerialEncoder():
         print "stopbits: ",  self.ser.stopbits
 
     def write(self, data):
-        self.ser.write(chr(data))
+        try:
+            self.ser.write(chr(data))
+        except:
+            return
 
 if __name__ == '__main__':
     e = SerialEncoder()

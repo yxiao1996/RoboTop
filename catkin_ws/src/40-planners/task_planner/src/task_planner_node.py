@@ -2,7 +2,7 @@
 import copy
 import rospy
 from std_msgs.msg import String, Float64MultiArray#Imports msg
-from robocon_msgs.msg import BoolStamped, Pose2DList, Pose2DStamped
+from robocon_msgs.msg import BoolStamped, Pose2DList, Pose2DStamped, FSMState
 
 class task_planner_node(object):
     def __init__(self):
@@ -12,6 +12,7 @@ class task_planner_node(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Task buffer
+        self.state = None
         self.Task = [{'path': [(0.0, 0.0,  0.0)],
                       'move': 'sleepforever'},
                      {'path': [(500.0, 500.0, 0.0), (0.0, 500.0, 0.0), (500.0, 0.0, 0.0)],
@@ -44,8 +45,9 @@ class task_planner_node(object):
         self.sub_confirm_move = rospy.Subscriber("~confirm_move", BoolStamped, self.cbConfMove)
         self.sub_finish_path = rospy.Subscriber("~finish_path", BoolStamped, self.cbFinishPath)
         self.sub_finish_move = rospy.Subscriber("~finish_move", BoolStamped, self.cbFinishMove)
-        self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord)
+        self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
+        self.sub_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -64,9 +66,14 @@ class task_planner_node(object):
         if self.active:
             self.set_task()
 
+    def cbState(self, msg):
+        self.state = msg.state
+
     def cbFinishCoord(self, msg):
-        #if not self.active:
-        #    return
+        if not self.state == "AT_GOAL":
+            return
+        if len(self.current_macro_task) > 0:
+            return
         # Finish coordination switch to next macro task
         if msg.data:
             # I receive positive confirm, switch to next task
@@ -76,6 +83,7 @@ class task_planner_node(object):
                 self.macro_tasks = rospy.get_param("~macro_tasks")
                 self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
                 self.current_task = self.current_macro_task.pop()
+                rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
             except:
                 # Or its the last task
                 return
@@ -85,6 +93,7 @@ class task_planner_node(object):
             self.macro_tasks = rospy.get_param("~macro_tasks")
             self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
             self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
         # Publish finish message to enter planning state
         finish_msg = BoolStamped()
         finish_msg.header.stamp = rospy.Time.now()
@@ -131,24 +140,24 @@ class task_planner_node(object):
         try:
             self.current_task = self.current_macro_task.pop()
             #self.current_task = self.macro_tasks['macro_task_0'].pop()
-            rospy.loginfo("[%s] pop next task" %(self.node_name))
+            rospy.loginfo("[%s] pop next task [%s]" %(self.node_name, self.current_task))
             # Publish finish message
             finish_msg = BoolStamped()
             finish_msg.header.stamp = rospy.Time.now()
             finish_msg.data = True
             self.pub_finish.publish(finish_msg)
         except:
-            return
-            debug = False
+            debug = True
             if debug:
-                self.current_task = self.default_task
-                rospy.loginfo("[%s] pop default task" %(self.node_name))
+                #self.current_task = self.default_task
+                #rospy.loginfo("[%s] pop default task" %(self.node_name))
                 # Publish finish message
                 finish_msg = BoolStamped()
                 finish_msg.header.stamp = rospy.Time.now()
-                finish_msg.data = True
-                self.pub_finish.publish(finish_msg)
-            
+                finish_msg.data = False
+                #self.pub_finish.publish(finish_msg)
+                self.cbFinishCoord(finish_msg)
+            return
 
     def pub_confrim_msg(self):
         # Finish planning, set fsm to next state

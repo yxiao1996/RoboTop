@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, FSMState
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class MovePlanner(object):
     def __init__(self):
@@ -27,8 +28,13 @@ class MovePlanner(object):
         self.sub_complete = rospy.Subscriber("~complete", BoolStamped, self.cbNextmove) # from communication
         self.sub_at_goal = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         self.sub_set_move = rospy.Subscriber("~set_move", String, self.cbSetMove)
+        self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord)
         self.sub_fsm_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
 
+        # Setup Service
+        self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
+        self.fetch = rospy.ServiceProxy('/Robo/serial_encoder_node/fetch', Empty)
+        self.release = rospy.ServiceProxy('/Robo/serial_encoder_node/release', Empty)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -65,11 +71,20 @@ class MovePlanner(object):
 
     def publishMove(self):     
         # Publish move message
-        move_msg = String()
-        move_msg.data = self.move
-        self.pub_move.publish(move_msg)
+        #move_msg = String()
+        # move_msg.data = self.move
+        #self.pub_move.publish(move_msg)
         if self.move == 'sleep':
-            rospy.sleep(3)
+            rospy.sleep(5)
+        elif self.move == 'throw':
+            rospy.sleep(10)
+        elif self.move == 'joy':
+            self.set_joy()
+        elif self.move == 'fetch':
+            self.release()
+            return
+            rospy.sleep(rospy.Duration.from_sec(10.0))
+            self.fetch()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
@@ -81,6 +96,16 @@ class MovePlanner(object):
         # Publish message to fsm enter planning state
         #rospy.sleep(2)
         #self.pub_enter_planning.publish(conf_msg)
+
+    def cbFinishCoord(self, msg):
+        if not self.active:
+            return
+        self.fetch()
+        # Publish confirm message to task planner
+        conf_msg = BoolStamped()
+        conf_msg.header.stamp = rospy.Time.now()
+        conf_msg.data = True
+        self.pub_finish.publish(conf_msg)
         
     def cbNextmove(self,msg):
         if not self.active:

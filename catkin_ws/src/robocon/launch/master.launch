@@ -18,12 +18,20 @@
     <arg name="protocol_auto_flag" default="true"/>
 
     <arg name="planner" default="false"/>
+    <arg name="apriltag" default="false"/>
+
+    <rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>
+    <rosparam command="load" file="$(find robocon)/config/$(arg config)/train_detect/$(arg param_file_name).yaml"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">
-        <include file="$(find usb_cam)/launch/usb_cam-test.launch">
-            
-        </include>
+        <node ns="$(arg veh)" name="usb_cam" pkg="uvc_camera" type="uvc_camera_node" output="screen">
+		  <param name="device" value="/dev/video0" />
+		  <param name="fps" value="5"/>
+		  <param name="width" value="640" />
+		  <param name="height" value="480" />
+		  <param name="frame_id" value="usb_cam" />
+	    </node>
     </group>
 
     <!-- Start finite state machine -->
@@ -40,6 +48,7 @@
             <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
             <remap from="/Robo/task_planner_node/finish_move" to="/Robo/move_planner_node/finish"/>
             <remap from="/Robo/task_planner_node/finish_path" to="/Robo/path_planner_node/reach_dest"/>
+            <remap from="/Robo/task_planner_node/finish_coord" to="/Robo/apriltag_node/coord"/>
         </node>
 
         <node ns="$(arg veh)" pkg="path_planner" type="path_planner_node.py" name="path_planner_node" output="screen">
@@ -49,16 +58,19 @@
 
         <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
             <remap from="/Robo/move_planner_node/set_move" to="/Robo/task_planner_node/set_move"/>
+            <remap from="/Robo/move_planner_node/finish_coord" to="/Robo/apriltag_node/coord"/>
         </node>
     </group>
 
     <!-- Start Joystick -->
     <group if="$(arg joystick)">
+        
         <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen">
             <param name="deadzone" value="0.1"/>
         </node>
         <!--
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
+            <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
             <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
         </node>
@@ -82,6 +94,7 @@
     <group if="$(arg decoder)">
         <node ns="$(arg veh)" pkg="serial_decoder" type="serial_decoder_node.py" name="serial_decoder_node" output="screen">
             <rosparam command="load" file="$(find robocon)/config/$(arg config)/serial_decoder/serial_decoder_node/$(arg param_file_name).yaml"/>
+            <!--<rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>-->
         </node>
     </group>
 
@@ -123,6 +136,40 @@
         <!--<node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />-->
     </group>
 
+    <!-- Start AprilTags -->
+    <group if="$(arg apriltag)">
+      <node ns="$(arg veh)" pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector" output="screen">
+		<!-- Remap topic required by the node to custom topics -->
+		<remap from="image_rect" to="image_raw" />
+		<remap from="camera_info" to="camera_info" />
+        <!--<remap from="switch" to="apriltag_detector/switch"/>-->
+
+		<!-- Optional: Subscribe to the compressed stream-->
+		<param name="image_transport" type="str" value="compressed" />
+
+		<!-- Select the tag family: 16h5, 25h7, 25h9, 36h9, or 36h11(default) -->
+		<param name="tag_family" type="str" value="36h11" />
+
+		<!-- Enable projected optical measurements for more accurate tag transformations -->
+		<!-- This exists for backwards compatability and should be left true for new setups -->
+		<param name="projected_optics" type="bool" value="true" />
+
+		<!-- Describe the tags -->
+		<rosparam param="tag_descriptions">[
+      {id: 0, size: 0.163513},
+      {id: 1, size: 0.163513, frame_id: a_frame},
+      {id: 2, size: 0.163513, frame_id: tag_2},
+      {id: 3, size: 0.163513},
+      {id: 4, size: 0.163513},
+      {id: 5, size: 0.163513}]
+    </rosparam>
+	  </node>
+	  <node ns="$(arg veh)" name="apriltag_node" pkg="apriltags_ros" type="apriltag_node.py" output="screen">
+		<remap from="~apriltags_in" to="/Robo/tag_detections"/>
+	  </node>
+	  <node ns="$(arg veh)" name="broadcaster_node" pkg="tf_node" type="broadcaster_node.py" output="screen"/>
+    </group>
+
     <!-- Start Object Detector-->
     <group if="$(arg detect)">
         <node ns="$(arg veh)" pkg="detector" type="detector_node.py" name="detector_node" output="screen"/>
@@ -133,6 +180,8 @@
 
     <!-- Start Visual Odometry -->
     <group if="$(arg viz_odom)">
-        <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen"/>
+        <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen">
+            <remap from="~image" to="image_raw"/>
+        </node>
     </group>
 </launch>
