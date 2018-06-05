@@ -11,11 +11,11 @@ macro_tasks:
       - path:
           - [2000.0, 0.0, -90.0]
         move:
-          "sleep"
+          "roi"
       - path:
           - [0.0, 0.0, 0.0]
         move:
-          "sleep"
+          "find_circle"
   macro_task_1: 
       - path:
           - [0.0, 1000.0, 0.0]

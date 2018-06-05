@@ -1,9 +1,8 @@
 <launch>
-<<<<<<< HEAD
   <include file="$(find usb_cam)/launch/usb_cam-test.launch">
   </include>
-=======
   <rosparam command="load" file="$(find robocon)/config/baseline/train_detect/data.yaml"/>
+  <!-->
   <node name="usb_cam" pkg="uvc_camera" type="uvc_camera_node" output="screen">
 		  <param name="device" value="/dev/video1" />
 		  <param name="fps" value="30"/>
@@ -11,9 +10,10 @@
 		  <param name="height" value="480" />
 		  <param name="frame_id" value="usb_cam" />
 	    </node>
->>>>>>> 9cf6960f7ba23b2712634386ca2513bf879c1f96
+  -->
   <node name="circle_detector" pkg="circle_detector" type="circle_detector_node.py" output="screen">
   </node>
+  
   <node name="roi_filter" pkg="roi_filter" type="roi_filter_node.py" output="screen">
     <remap from="~set_ref" to="circle_detector/set_ref"/>
     <remap from="~roi" to="circle_detector/roi"/>

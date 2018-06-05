@@ -27,6 +27,7 @@ class JoyMapperNode(object):
         self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
         # Setup service
         self.srv_joy = rospy.Service("~set_joy", Empty, self.cbSrvJoy)
+        self.srv_joy_off = rospy.Service("~joy_off", Empty, self.cbSrvJoyOff)
         
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
@@ -49,6 +50,14 @@ class JoyMapperNode(object):
         joy_override_msg = BoolStamped()
         joy_override_msg.header.stamp = rospy.Time.now()
         joy_override_msg.data = True
+        self.pub_buttons.publish(joy_override_msg)
+        return EmptyResponse()
+
+    def cbSrvJoyOff(self, req):
+        # joystick override True button
+        joy_override_msg = BoolStamped()
+        joy_override_msg.header.stamp = rospy.Time.now()
+        joy_override_msg.data = False
         self.pub_buttons.publish(joy_override_msg)
         return EmptyResponse()
 

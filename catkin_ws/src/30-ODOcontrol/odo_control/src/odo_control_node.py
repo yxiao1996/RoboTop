@@ -8,6 +8,7 @@ from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, Twist2DStamped
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 """
 msg:
 geometry_msgs/PoseWithCovariance pose
@@ -56,6 +57,8 @@ class odo_control_node(object):
         self.sub_odometry = rospy.Subscriber("/odom", Odometry, self.cbOdom, queue_size=1)
         self.sub_pose = rospy.Subscriber("~pose", Pose2DStamped, self.cbPose, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
+        # Setup Services
+        self.srv_reach = rospy.Service("~reach_goal", Empty, self.cbSrvReach)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
@@ -70,6 +73,14 @@ class odo_control_node(object):
 
     def cbSwitch(self, msg):
         self.active = msg.data
+
+    def cbSrvReach(self, req):
+        reach_msg = BoolStamped()
+        reach_msg.header.stamp = rospy.Time.now()
+        reach_msg.data = True
+        self.pub_reach.publish(reach_msg)
+        self.active = False
+        return EmptyResponse()
 
     def cbOdom(self,msg):
         # Callback for simulation odometry

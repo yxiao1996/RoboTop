@@ -19,19 +19,21 @@
 
     <arg name="planner" default="false"/>
     <arg name="apriltag" default="false"/>
+    <arg name="roi" default="false"/>
 
     <rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>
     <rosparam command="load" file="$(find robocon)/config/$(arg config)/train_detect/$(arg param_file_name).yaml"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">
-        <node ns="$(arg veh)" name="usb_cam" pkg="uvc_camera" type="uvc_camera_node" output="screen">
-		  <param name="device" value="/dev/video0" />
-		  <param name="fps" value="5"/>
-		  <param name="width" value="640" />
-		  <param name="height" value="480" />
-		  <param name="frame_id" value="usb_cam" />
-	    </node>
+        <node ns="$(arg veh)" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+            <param name="video_device" value="/dev/video0" />
+            <param name="image_width" value="640" />
+            <param name="image_height" value="480" />
+            <param name="pixel_format" value="yuyv" />
+            <param name="camera_frame_id" value="usb_cam" />
+            <param name="io_method" value="mmap"/>
+        </node>
     </group>
 
     <!-- Start finite state machine -->
@@ -68,13 +70,13 @@
         <node ns="$(arg veh)" pkg="joy" type="joy_node" name="joy_node" output="screen">
             <param name="deadzone" value="0.1"/>
         </node>
-        <!--
+        
         <node ns="$(arg veh)" pkg="joy_mapper" type="joy_mapper_node.py" name="joy_mapper_node" output="screen">
             <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
             <remap from="/Robo/joy_mapper_node/joy" to="/Robo/joy"/>
             <param name="protocol_auto_flag" type="bool" value="$(arg protocol_auto_flag)"/>
         </node>
-        -->
+        
     </group>
 
     <!-- Start Serial Port Encoder -->
@@ -182,6 +184,18 @@
     <group if="$(arg viz_odom)">
         <node ns="$(arg veh)" pkg="visual_odometry" type="visual_odometry_node.py" name="visual_odometry_node" output="screen">
             <remap from="~image" to="image_raw"/>
+        </node>
+    </group>
+
+    <!-- Start ROI -->
+    <group if="$(arg roi)">
+        <node ns="$(arg veh)" name="circle_detector" pkg="circle_detector" type="circle_detector_node.py" output="screen">
+            <remap from="~image_compressed" to="usb_cam/image_raw/compressed"/>
+        </node>
+  
+        <node ns="$(arg veh)" name="roi_filter" pkg="roi_filter" type="roi_filter_node.py" output="screen">
+            <remap from="~set_ref" to="move_planner_node/set_ref"/>
+            <remap from="~roi" to="circle_detector/roi"/>
         </node>
     </group>
 </launch>

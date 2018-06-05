@@ -23,6 +23,7 @@ class MovePlanner(object):
         self.pub_finish = rospy.Publisher("~finish", BoolStamped, queue_size=1)
         #self.pub_enter_planning = rospy.Publisher("~enter_planning", BoolStamped, queue_size=1)
         self.pub_set_confirm = rospy.Publisher("~confirm", BoolStamped, queue_size=1)
+        self.pub_set_ref = rospy.Publisher("~set_ref", BoolStamped, queue_size=1)
 
         # Setup subscriber
         self.sub_complete = rospy.Subscriber("~complete", BoolStamped, self.cbNextmove) # from communication
@@ -35,6 +36,7 @@ class MovePlanner(object):
         self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
         self.fetch = rospy.ServiceProxy('/Robo/serial_encoder_node/fetch', Empty)
         self.release = rospy.ServiceProxy('/Robo/serial_encoder_node/release', Empty)
+        self.find_circle = rospy.ServiceProxy('/Robo/circle_detector/find_circle', Empty)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -85,6 +87,12 @@ class MovePlanner(object):
             return
             rospy.sleep(rospy.Duration.from_sec(10.0))
             self.fetch()
+        elif self.move == 'roi':
+            set_msg = BoolStamped()
+            set_msg.header.stamp = rospy.Time.now()
+            self.pub_set_ref.publish(set_msg)
+        elif self.move == "find_circle":
+            self.find_circle()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
