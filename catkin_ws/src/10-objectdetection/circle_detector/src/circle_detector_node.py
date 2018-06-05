@@ -40,8 +40,7 @@ class CircleDetectorNode():
         self.finish_flag = False
         self.cbTrigger(msg)
         while(1):
-            if self.finish_flag:
-                return EmptyResponse()
+            return EmptyResponse()
 
     def cbTrigger(self, msg):
         self.trigger = msg.data
@@ -91,8 +90,8 @@ class CircleDetectorNode():
         clf = mixture.GaussianMixture(n_components=2, covariance_type='full')
         clf.fit(self.data)
         # Publish set ref message to filter
-        set_msg = BoolStamped()
-        set_msg.header.stamp = rospy.Time.now()
+        #set_msg = BoolStamped()
+        #set_msg.header.stamp = rospy.Time.now()
         #self.pub_set_ref.publish(set_msg)
         return clf.means_
 
@@ -101,7 +100,6 @@ class CircleDetectorNode():
             return
         if self.status == "default":
             # Detect circles in image
-            #print "set image"
             self.detector.setImage(self.rbg)
             circles, bw_image = self.detector.detectCircles('green')
 
@@ -120,7 +118,6 @@ class CircleDetectorNode():
                     img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
                     image_msg = self.bridge.cv2_to_imgmsg(img1, 'rgb8')
                     self.pub_debug.publish(image_msg)
-                    rospy.loginfo("[%s] finish data fitting, start cropping roi image" %(self.node_name))
                     self.finish_flag = True
                 pub = False
                 if pub:

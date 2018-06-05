@@ -6,6 +6,7 @@
 
     <!-- switch args-->
     <arg name="camera" default="false"/>
+    <arg name="realsense" default="false"/>
     <arg name="detect" default="false"/>
     <arg name="fsm" default="true"/>
     <arg name="joystick" default="true"/>
@@ -34,6 +35,45 @@
             <param name="camera_frame_id" value="usb_cam" />
             <param name="io_method" value="mmap"/>
         </node>
+    </group>
+
+    <!-- Start Realsense -->
+    <group if="$(arg realsense)">
+        <include ns="$(arg veh)" file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="serial_no" default="617205002201"/>
+            <arg name="fisheye_width"       default="640"/>
+            <arg name="fisheye_height"      default="480"/>
+            <arg name="enable_fisheye"      default="false"/>
+
+            <arg name="depth_width"         default="640"/>
+            <arg name="depth_height"        default="480"/>
+            <arg name="enable_depth"        default="true"/>
+
+            <arg name="infra1_width"        default="640"/>
+            <arg name="infra1_height"       default="480"/>
+            <arg name="enable_infra1"       default="false"/>
+
+            <arg name="infra2_width"        default="640"/>
+            <arg name="infra2_height"       default="480"/>
+            <arg name="enable_infra2"       default="false"/>
+
+            <arg name="color_width"         default="640"/>
+            <arg name="color_height"        default="480"/>
+            <arg name="enable_color"        default="true"/>
+
+            <arg name="fisheye_fps"         default="30"/>
+            <arg name="depth_fps"           default="30"/>
+            <arg name="infra1_fps"          default="30"/>
+            <arg name="infra2_fps"          default="30"/>
+            <arg name="color_fps"           default="30"/>
+            <arg name="gyro_fps"            default="1000"/>
+            <arg name="accel_fps"           default="1000"/>
+            <arg name="enable_imu"          default="true"/>
+
+            <arg name="enable_pointcloud"   default="false"/>
+            <arg name="enable_sync"         default="false"/>
+            <arg name="align_depth"         default="false"/>
+        </include>
     </group>
 
     <!-- Start finite state machine -->
@@ -190,7 +230,7 @@
     <!-- Start ROI -->
     <group if="$(arg roi)">
         <node ns="$(arg veh)" name="circle_detector" pkg="circle_detector" type="circle_detector_node.py" output="screen">
-            <remap from="~image_compressed" to="usb_cam/image_raw/compressed"/>
+            <remap from="~image_compressed" to="camera/color/image_raw/compressed"/>
         </node>
   
         <node ns="$(arg veh)" name="roi_filter" pkg="roi_filter" type="roi_filter_node.py" output="screen">
