@@ -63,7 +63,7 @@ class odo_control_node(object):
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
         self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
 
-        rospy.loginfo("[%s] Initialzed." %(self.node_name))
+        rospy.loginfo("[%s] Initialized." %(self.node_name))
 
     def setupParameter(self,param_name,default_value):
         value = rospy.get_param(param_name,default_value)
@@ -142,6 +142,10 @@ class odo_control_node(object):
         #print "odom control timer"
         if self.debug_flag == False:
             return
+
+        # get odometry offset
+        odom_offset = rospy.get_param("/robot_state")[1]["offset"]
+
         # read robot state from parameter server
         robot_state = rospy.get_param("/robot_state")
         odom = robot_state[0]["odom"]

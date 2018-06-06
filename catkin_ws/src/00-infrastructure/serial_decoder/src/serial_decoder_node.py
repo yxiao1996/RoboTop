@@ -4,7 +4,7 @@ from std_msgs.msg import String #Imports msg
 #from serial_decoder.ccd import CCD as Decoder
 from serial_decoder.decoder import Decoder
 from Tkinter import *
-from robocon_msgs.msg import CCD_data, Joy6channel, Pose2DStamped
+from robocon_msgs.msg import CCD_data, Pose2DStamped
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
@@ -12,40 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plot
 import struct
-
-"""
-odometry
-child_frame_id
-Header header
-string child_frame_id
-geometry_msgs/PoseWithCovariance pose
-geometry_msgs/TwistWithCovariance twist
-
-Pose pose
-
-# Row-major representation of the 6x6 covariance matrix
-# The orientation parameters use a fixed-axis representation.
-# In order, the parameters are:
-# (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
-float64[36] covariance
-
-Twist twist
-
-# Row-major representation of the 6x6 covariance matrix
-# The orientation parameters use a fixed-axis representation.
-# In order, the parameters are:
-# (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
-float64[36] covariance
-
-# A representation of pose in free space, composed of position and orientation. 
-Point position
-Quaternion orientation
-
-# This expresses velocity in free space broken into its linear and angular parts.
-Vector3  linear
-Vector3  angular
-
-"""
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class decoder_node(object):
     def __init__(self):
@@ -87,8 +54,9 @@ class decoder_node(object):
         self.pub_odo_debug = rospy.Publisher("~odo_debug", PoseStamped, queue_size=1)
         self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_data, queue_size=1)
         self.pub_debug = rospy.Publisher("~debug", Joy, queue_size=1)
-        # Setup subscriber
-        #self.sub_topic_b = rospy.Subscriber("~topic_b", String, self.cbTopic)
+        # Setup Service
+        self.srv_offset = rospy.Service("~set_offset", Empty, self.cbSrvOffset)
+
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
         # Create a timer that calls the process function every 1.0 second
@@ -102,8 +70,14 @@ class decoder_node(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
-    #def cbTopic(self,msg):
-        #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
+    def cbSrvOffset(self,req):
+        # update robot state parameter
+        robot_state = rospy.get_param("/robot_state")
+        robot_state[0]["offset"][0] = robot_state[0]["odom"][0]
+        robot_state[0]["offset"][1] = robot_state[0]["odom"][1]
+        robot_state[0]["offset"][2] = robot_state[0]["odom"][2]
+        rospy.set_param("/robot_state", robot_state)
+        return EmptyResponse()
 
     def cbdebug(self, event):
         # Read data list from serial port
@@ -144,7 +118,8 @@ class decoder_node(object):
         plot.plot_bar(bars, self.axes, display_encoder=False)
         plt.pause(0.000001)
 
-    def parse_data(self, data_list):
+    def parse_data(self, data_list_raw):
+        data_list = data_list_raw[2]
         segment_1 = data_list[0 : self.data_length[0]]
         segment_2 = data_list[self.data_length[0] : self.data_length[0]+self.data_length[1]]
         segment_3 = data_list[self.data_length[0]+self.data_length[1] : self.total_length]
@@ -170,6 +145,27 @@ class decoder_node(object):
         # Display
         if plot_everything:
             self.display(data_list)
+
+        try: 
+            # Check protocal
+            assert len(data_list) == self.data_length[0]
+            data = []
+            for raw in data_list:
+                datum = struct.unpack('B', "".join(raw))[0]
+                data.append(datum)
+                rospy.loginfo("revice ack info [%s]"%(datum))
+            if data[0] == 23 and data[1] == 33:
+                # Setup offset
+                # update robot state parameter
+                robot_state = rospy.get_param("/robot_state")
+                robot_state[1]["offset"][0] = robot_state[0]["odom"][0]
+                robot_state[1]["offset"][1] = robot_state[0]["odom"][1]
+                robot_state[1]["offset"][2] = robot_state[0]["odom"][2]
+                rospy.loginfo("set up offset [%s]"%(robot_state[1]["offset"]))
+                rospy.set_param("/robot_state", robot_state)
+        except Exception as e:
+            rospy.loginfo(e)
+        return
 
         # Debug message
         joy_msg = Joy()        
@@ -214,17 +210,17 @@ class decoder_node(object):
         #robot_state = rospy.get_param("/robot_state")
         #print robot_state
         # Decode odometry data
-        data_pre = data[0:2]
-        data_post = data[-2:]
-        odom_data = data[2]
+        #data_pre = data[0:2]
+        #data_post = data[-2:]
+        odom_data = data
         
         try:
             # Check header and tail of each data segment
-            if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
+            #if struct.unpack('B', data_pre[0])[0] != 13 or struct.unpack('B', data_pre[1])[0] != 10:
                 #print struct.unpack('B', data_pre[0]), struct.unpack('B', data_pre[1])
-                return
-            if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
-                return
+            #    return
+            #if struct.unpack('B', data_post[0])[0] != 10 or struct.unpack('B', data_post[1])[0] != 13:
+            #    return
 
             rawValue = []
             for i in range(len(odom_data) / 4):
@@ -271,7 +267,7 @@ class decoder_node(object):
             odo_msg.header.stamp = rospy.Time.now()
             self.pub_odo_msg.publish(odo_msg)
 
-            # update robot state parameter]
+            # update robot state parameter
             robot_state = rospy.get_param("/robot_state")
             robot_state[0]["odom"][0] = rawValue[3]
             robot_state[0]["odom"][1] = -rawValue[4]

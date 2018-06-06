@@ -7,6 +7,8 @@
 
     <!-- switch args-->
     <arg name="camera" default="false"/>
+    <arg name="camera/cam_0" default="true"/>
+    <arg name="camera/cam_1" default="true"/>
     <arg name="realsense" default="false"/>
     <arg name="detect" default="false"/>
     <arg name="fsm" default="true"/>
@@ -22,20 +24,44 @@
     <arg name="planner" default="false"/>
     <arg name="apriltag" default="false"/>
     <arg name="roi" default="false"/>
+    <arg name="test" default="false"/>
 
     <rosparam command="load" file="$(find robocon)/config/$(arg config)/robot_state/$(arg param_file_name).yaml"/>
     <rosparam command="load" file="$(find robocon)/config/$(arg config)/train_detect/$(arg param_file_name).yaml"/>
 
     <!-- Start Camera-->
     <group if="$(arg camera)">
-        <node ns="$(arg veh)" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
-            <param name="video_device" value="/dev/video0" />
-            <param name="image_width" value="640" />
-            <param name="image_height" value="480" />
-            <param name="pixel_format" value="yuyv" />
-            <param name="camera_frame_id" value="usb_cam" />
-            <param name="io_method" value="mmap"/>
-        </node>
+        <group if="$(arg camera/cam_0)">
+            
+            <node ns="$(arg veh)" name="usb_cam0" pkg="usb_cam" type="usb_cam_node" output="screen" >
+                <param name="video_device" value="/dev/video0" />
+                <param name="image_width" value="640" />
+                <param name="image_height" value="480" />
+                <param name="pixel_format" value="yuyv" />
+                <param name="camera_frame_id" value="usb_cam" />
+                <param name="io_method" value="mmap"/>
+            </node>
+            <!--
+            
+            <node ns="$(arg veh)" name="usb_cam0" pkg="uvc_camera" type="uvc_camera_node" output="screen">
+                <param name="device" value="/dev/video0" />
+                <param name="fps" value="30"/>
+                <param name="width" value="640" />
+                <param name="height" value="480" />
+                <param name="frame_id" value="usb_cam" />
+            </node>
+            -->
+        </group>
+        <group if="$(arg camera/cam_1)">
+            <node ns="$(arg veh)" name="usb_cam1" pkg="usb_cam" type="usb_cam_node" output="screen" >
+                <param name="video_device" value="/dev/video1" />
+                <param name="image_width" value="640" />
+                <param name="image_height" value="480" />
+                <param name="pixel_format" value="yuyv" />
+                <param name="camera_frame_id" value="usb_cam" />
+                <param name="io_method" value="mmap"/>
+            </node>
+        </group>
     </group>
 
     <!-- Start Realsense -->
@@ -183,8 +209,8 @@
     <group if="$(arg apriltag)">
       <node ns="$(arg veh)" pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector" output="screen">
 		<!-- Remap topic required by the node to custom topics -->
-		<remap from="image_rect" to="image_raw" />
-		<remap from="camera_info" to="camera_info" />
+		<remap from="image_rect" to="usb_cam1/image_raw" />
+		<remap from="camera_info" to="usb_cam1/camera_info" />
         <!--<remap from="switch" to="apriltag_detector/switch"/>-->
 
 		<!-- Optional: Subscribe to the compressed stream-->
@@ -231,12 +257,18 @@
     <!-- Start ROI -->
     <group if="$(arg roi)">
         <node ns="$(arg veh)" name="circle_detector" pkg="circle_detector" type="circle_detector_node.py" output="screen">
-            <remap from="~image_compressed" to="camera/color/image_raw/compressed"/>
+            <remap from="~image_compressed" to="usb_cam1/image_raw/compressed"/>
         </node>
   
         <node ns="$(arg veh)" name="roi_filter" pkg="roi_filter" type="roi_filter_node.py" output="screen">
             <remap from="~set_ref" to="move_planner_node/set_ref"/>
             <remap from="~roi" to="circle_detector/roi"/>
+        </node>
+    </group>
+
+    <!-- Start test -->
+    <group if="$(arg test)">
+        <node ns="$(arg veh)" name="tester_node" pkg="tester" type="tester_node.py" output="screen">
         </node>
     </group>
 </launch>

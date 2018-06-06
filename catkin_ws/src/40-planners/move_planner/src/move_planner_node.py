@@ -14,6 +14,12 @@ class MovePlanner(object):
         self.active = False
         self.fsm_state = "JOYSTICK_CONTROL"
 
+        # states
+        self.left_open = False
+        self.right_open = False
+        self.left_shooting = False
+        self.right_shooting = False
+
         # Path buffer
         self.moves = ['sleep']
         self.move = self.moves.pop()
@@ -31,18 +37,26 @@ class MovePlanner(object):
         self.sub_set_move = rospy.Subscriber("~set_move", String, self.cbSetMove)
         self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord)
         self.sub_fsm_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
-
+        self.sub_left_open = rospy.Subscriber("~left_open", BoolStamped, self.cbLeftOpen, queue_size=1)
+        self.sub_right_open = rospy.Subscriber("~right_open", BoolStamped, self.cbRightOpen, queue_size=1)
+        
         # Setup Service
         self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
         self.fetch = rospy.ServiceProxy('/Robo/serial_encoder_node/fetch', Empty)
         self.release = rospy.ServiceProxy('/Robo/serial_encoder_node/release', Empty)
         self.find_circle = rospy.ServiceProxy('/Robo/circle_detector/find_circle', Empty)
+        self.open_left = rospy.ServiceProxy('/Robo/serial_encoder_node/open_left', Empty)
+        self.open_right = rospy.ServiceProxy('/Robo/serial_encoder_node/open_right', Empty)
+        self.close_left = rospy.ServiceProxy('/Robo/serial_encoder_node/close_left', Empty)
+        self.close_right = rospy.ServiceProxy('/Robo/serial_encoder_node/close_right', Empty)
+        
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
         # self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
+        self.cmd_rate = rospy.Rate(5)
 
-        rospy.loginfo("[%s] Initialzed." %(self.node_name))
+        rospy.loginfo("[%s] Initialized." %(self.node_name))
 
     def setupParameter(self,param_name,default_value):
         value = rospy.get_param(param_name,default_value)
@@ -57,6 +71,18 @@ class MovePlanner(object):
     
     def cbState(self, msg):
         self.fsm_state = msg.state
+
+    def cbLeftOpen(self, msg):
+        if msg.data:
+            self.left_open = True
+        else:
+            self.left_open = False
+
+    def cbRightOpen(self, msg):
+        if msg.data:
+            self.right_open = True
+        else:
+            self.right_open = False
 
     def cbSetMove(self, msg):
         # Convert move from message
@@ -93,6 +119,30 @@ class MovePlanner(object):
             self.pub_set_ref.publish(set_msg)
         elif self.move == "find_circle":
             self.find_circle()
+        elif self.move == "open_left":
+            if self.left_open == True:
+                return
+            else:
+                while(self.left_open == False):
+                    self.open_left()
+        elif self.move == "close_left":
+            if self.left_open == False:
+                return
+            else:
+                while(self.left_open == True):
+                    self.close_left()
+        elif self.move == "open_right":
+            if self.right_open == True:
+                return
+            else:
+                while(self.right_open == False):
+                    self.open_right()
+        elif self.move == "close_right":
+            if self.right_open == False:
+                return
+            else:
+                while(self.right_open == True):
+                    self.open_right()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
