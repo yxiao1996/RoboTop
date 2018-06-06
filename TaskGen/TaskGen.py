@@ -1,5 +1,6 @@
 import yaml
 
+save_dir = '../catkin_ws/src/robocon/tasks/'
 # Open txt file
 f = open('./sample.txt')
 # read fist line as file name
@@ -49,8 +50,9 @@ while True:
     except:
         break
 
-data = {"macrotasks": macrotasks}
+data = {"macro_tasks": macrotasks}
 # Dump yaml file
-stream = file(filename, 'w')
+print save_dir+filename
+stream = file(save_dir + filename, 'w')
 yaml.dump(data, stream)    # Write a YAML representation of data to 'document.yaml'.
 print yaml.dump(data)      # Output the document to the screen.

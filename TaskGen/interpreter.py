@@ -88,22 +88,23 @@ def Tokenizer(lines):
             tmp = line.split(']')[1]
             move = tmp.split(' ')[-1]
             #print pose, move
-            task = {'path': pose,
-                    'move': move}
+            task = {'move': move,
+                    'path': [pose]}
             macro_task.append(task)
         macro_name = 'macro_task_'+str(i)
         macro_tasks[macro_name] = macro_task
     return macro_tasks
 
 def Interpreter():
+    save_dir = '../catkin_ws/src/robocon/tasks/'
     f = open('./sample.txt')
     lines = []
     lines = f.readlines()
     filename = lines[0].split('\n')[0] + '.yaml'
     macro_tasks = Tokenizer(lines)
-    data = {"macrotasks": macro_tasks}
+    data = {"macro_tasks": macro_tasks}
     # Dump yaml file
-    stream = file(filename, 'w')
+    stream = file(save_dir + filename, 'w')
     yaml.dump(data, stream)    # Write a YAML representation of data to 'document.yaml'.
     print yaml.dump(data)      # Output the document to the screen.
 

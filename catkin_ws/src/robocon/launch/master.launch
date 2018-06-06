@@ -3,6 +3,7 @@
     <arg name="local" default="false" doc="true for running on laptop. false for running on vehicle."/>
     <arg name="config" default="baseline" doc="Specify a config."/>
     <arg name="param_file_name" default="default"/>
+    <arg name="task_file_name" default="default"/>
 
     <!-- switch args-->
     <arg name="camera" default="false"/>
@@ -85,7 +86,7 @@
 
     <group if="$(arg planner)"> 
         <node ns="$(arg veh)" name="task_planner_node" pkg="task_planner" type="task_planner_node.py" output="screen">
-            <rosparam command="load" file="$(find robocon)/config/$(arg config)/task_planner/task_planner_node/$(arg param_file_name).yaml"/>
+            <rosparam command="load" file="$(find robocon)/tasks/$(arg task_file_name).yaml"/>
             <remap from="/Robo/task_planner_node/confirm_path" to="/Robo/path_planner_node/confirm"/>
             <remap from="/Robo/task_planner_node/confirm_move" to="/Robo/move_planner_node/confirm"/>
             <remap from="/Robo/task_planner_node/finish_move" to="/Robo/move_planner_node/finish"/>

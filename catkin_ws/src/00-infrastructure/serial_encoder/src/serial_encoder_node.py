@@ -8,6 +8,7 @@ from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 import numpy as np
 import matplotlib.pyplot as plt 
 import plot
+from codebook import CodeBook 
 
 class serial_encoder_node(object):
     def __init__(self):
@@ -41,6 +42,7 @@ class serial_encoder_node(object):
         # states
         self.button_0 = 0.0
         self.button_1 = 0.0
+        self.codebook = CodeBook()
 
         # Save the name of the node
         self.node_name = rospy.get_name()
@@ -100,15 +102,27 @@ class serial_encoder_node(object):
         return EmptyResponse()
     
     def cbSrvOpenLeft(self, req):
+        release_msg = String()
+        release_msg.data = "open_left"
+        self.cbMove(release_msg)
         return EmptyResponse()
 
     def cbSrvOpenRight(self, req):
+        release_msg = String()
+        release_msg.data = "open_right"
+        self.cbMove(release_msg)
         return EmptyResponse()
 
     def cbSrvCloseLeft(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "close_left"
+        self.cbMove(fetch_msg)
         return EmptyResponse()
 
     def cbSrvCloseRight(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "close_right"
+        self.cbMove(fetch_msg)
         return EmptyResponse()
 
     def cbMove(self, msg):
@@ -117,16 +131,28 @@ class serial_encoder_node(object):
         if move == "sleep":
             button_1 = 0.0
         else:
-            if move == "throw":
-                button_1 = 1.0
+            if move == "fetch":
+                self.button_0 = button_0 = 0.0
+                self.button_1 = button_1 = 0.0
+            elif move == "release":
+                self.button_0 = button_0 = 1.0
+                self.button_1 = button_1 = 1.0
+            elif move == "open_left":
+                self.button_0 = button_0 = 1.0
+            elif move == "close_left":
+                self.button_0 = button_0 = 0.0
+            elif move == "open_right":
+                self.botton_1 = botton_1 = 1.0
+            elif move == "close_right":
+                self.botton_1 = botton_1 = 0.0
             else:
                 return
         data_list = translateCTLtoMove(-0.2, # fetch position
                                       0.6,   # release position
                                       0.0,   # fetch speed
                                       0.0,   # release speed
-                                      0.0,
-                                      button_1)
+                                      self.button_0,
+                                      self.button_1)
         # Write data to serial port
         for t in range(5):
             rospy.loginfo("*************************************************")
