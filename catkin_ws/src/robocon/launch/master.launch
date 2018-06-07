@@ -32,7 +32,7 @@
     <!-- Start Camera-->
     <group if="$(arg camera)">
         <group if="$(arg camera/cam_0)">
-            
+            <!-->
             <node ns="$(arg veh)" name="usb_cam0" pkg="usb_cam" type="usb_cam_node" output="screen" >
                 <param name="video_device" value="/dev/video0" />
                 <param name="image_width" value="640" />
@@ -41,16 +41,18 @@
                 <param name="camera_frame_id" value="usb_cam" />
                 <param name="io_method" value="mmap"/>
             </node>
-            <!--
+            -->
             
-            <node ns="$(arg veh)" name="usb_cam0" pkg="uvc_camera" type="uvc_camera_node" output="screen">
+            <node ns="$(arg veh)" name="usb_cam" pkg="uvc_camera" type="uvc_camera_node" output="screen">
                 <param name="device" value="/dev/video0" />
                 <param name="fps" value="30"/>
                 <param name="width" value="640" />
                 <param name="height" value="480" />
                 <param name="frame_id" value="usb_cam" />
+                <remap from="image_raw" to="usb_cam0/image_raw"/>
+                <remap from="camera_info" to="usb_cam0/camera_info"/>
             </node>
-            -->
+            
         </group>
         <group if="$(arg camera/cam_1)">
             <node ns="$(arg veh)" name="usb_cam1" pkg="usb_cam" type="usb_cam_node" output="screen" >
@@ -132,6 +134,7 @@
             <remap from="/Robo/move_planner_node/ack_right_shoot" to="/Robo/serial_decoder_node/ack_right_shoot"/>
             <remap from="/Robo/move_planner_node/ack_left_open" to="/Robo/serial_decoder_node/ack_left_open"/>
             <remap from="/Robo/move_planner_node/ack_right_open" to="/Robo/serial_decoder_node/ack_right_open"/>
+            <remap from="/Robo/move_planner_node/ack_apriltag" to="/Robo/apriltag_node/ack_apriltag"/>
         </node>
     </group>
 
@@ -213,8 +216,8 @@
     <group if="$(arg apriltag)">
       <node ns="$(arg veh)" pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector" output="screen">
 		<!-- Remap topic required by the node to custom topics -->
-		<remap from="image_rect" to="usb_cam1/image_raw" />
-		<remap from="camera_info" to="usb_cam1/camera_info" />
+		<remap from="image_rect" to="usb_cam0/image_raw" />
+		<remap from="camera_info" to="usb_cam0/camera_info" />
         <!--<remap from="switch" to="apriltag_detector/switch"/>-->
 
 		<!-- Optional: Subscribe to the compressed stream-->

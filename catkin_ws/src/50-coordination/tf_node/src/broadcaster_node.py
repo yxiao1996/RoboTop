@@ -11,6 +11,12 @@ if __name__ == '__main__':
                          #(0.0, 0.0, 0.0, 1.0),
                          tf.transformations.quaternion_from_euler(0, 0, 0),
                          rospy.Time.now(),
+                         "tag0",
+                         "ducky1")
+        br.sendTransform((-0.1, 0.0, 0.0),
+                         #(0.0, 0.0, 0.0, 1.0),
+                         tf.transformations.quaternion_from_euler(0, 0, 0),
+                         rospy.Time.now(),
                          "tag1",
                          "ducky1")
         br.sendTransform((0.0, -0.1, 0.0),

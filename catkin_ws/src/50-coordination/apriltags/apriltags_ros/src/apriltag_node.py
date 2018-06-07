@@ -32,6 +32,7 @@ class apriltag_node(object):
         self.pub_tagId = rospy.Publisher("~tag_id", Int8, queue_size=1)
         self.pub_coord = rospy.Publisher("~coord", BoolStamped, queue_size=1)
         self.pub_visualize = rospy.Publisher("~tag_pose", PoseStamped, queue_size=1)
+        self.pub_ack = rospy.Publisher("~ack_apriltag", BoolStamped, queue_size=1)
 
     def setupParam(self,param_name,default_value):
         value = rospy.get_param(param_name,default_value)
@@ -45,7 +46,7 @@ class apriltag_node(object):
     def callback(self, msg):
         if not self.active:
             return
-        
+        #print msg
         tag_infos = []
         trans_x_buf = 0.0
         trans_y_buf = 0.0
@@ -86,7 +87,7 @@ class apriltag_node(object):
             try:
                 (trans_tf,rot_tf) = self.listener.lookupTransform('/ducky1', frame_name, rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    continue
+                continue
             rot_tf_rpy = tf.transformations.euler_from_quaternion(rot_tf)
             yaw = rot_tf_rpy[2] / np.pi
             # Check phase
@@ -100,10 +101,18 @@ class apriltag_node(object):
             tag_id_msg = Int8()
             tag_id_msg.data = tag_id
             self.pub_tagId.publish(tag_id_msg)
+
+            # Publish ack
+            ack_msg = BoolStamped()
+            if trans.x < 0.7:
+                ack_msg.data = True
+            else:
+                ack_msg.data = False
+            self.pub_ack.publish(ack_msg)
             
             #print detection
             print detection #trans.x, trans.y, trans.z
-            self.checkProtocol(tag_id)
+            #self.checkProtocol(tag_id)
             #print rot.z - yaw
             #print tag_id, trans, rot
             rot_z_buf += rot.z

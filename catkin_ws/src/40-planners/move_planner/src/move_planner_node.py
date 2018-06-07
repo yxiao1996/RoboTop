@@ -19,6 +19,7 @@ class MovePlanner(object):
         self.right_open = False
         self.left_shooting = False
         self.right_shooting = False
+        self.apriltag_flag = False
 
         # Path buffer
         self.moves = ['sleep']
@@ -43,6 +44,7 @@ class MovePlanner(object):
         self.sub_ack_right_shoot = rospy.Subscriber("~ack_right_shoot", BoolStamped, self.cbAckRightShoot, queue_size=1)
         self.sub_ack_left_open = rospy.Subscriber("~ack_left_open", BoolStamped, self.cbAckLeftOpen, queue_size=1)
         self.sub_ack_right_open = rospy.Subscriber("~ack_right_open", BoolStamped, self.cbAckRightOpen, queue_size=1)
+        self.sub_ack_apriltag = rospy.Subscriber("~ack_apriltag", BoolStamped, self.cbAckApril, queue_size=1)
         
         # Setup Service
         self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
@@ -69,6 +71,10 @@ class MovePlanner(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbAckApril(self, msg):
+        if msg.data == True:
+            self.apriltag_flag = True
 
     def cbAckLeftShoot(self, msg):
         if msg.data == True:
@@ -166,11 +172,13 @@ class MovePlanner(object):
                 while(self.right_open == True):
                     self.open_right()
         elif self.move == "shoot_left":
-            if self.left_shooting == True:
-                return
-            else:
-                while(self.left_shooting == False):
-                    self.shoot_left()
+            self.left_shooting = False
+            while(self.left_shooting == False):
+                self.shoot_left()
+        elif self.move == "apriltag":
+            self.apriltag_flag = False
+            while(self.apriltag_flag == False):
+                self.cmd_rate.sleep()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))
@@ -184,6 +192,7 @@ class MovePlanner(object):
         #self.pub_enter_planning.publish(conf_msg)
 
     def cbFinishCoord(self, msg):
+        return
         if not self.active:
             return
         self.fetch()
