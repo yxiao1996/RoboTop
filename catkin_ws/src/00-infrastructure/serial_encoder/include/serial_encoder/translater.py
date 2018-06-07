@@ -132,6 +132,3 @@ def translateCTLtoMove(pos_get, pos_throw, speed_get, speed_throw, cmd_claw, cmd
     data_list.append(np.uint8((channel_8)))
 
     return data_list
-
-if __name__ == '__main__':
-    #print translateAuto(0.5, 0.5, 0.5, 0.5, True, False)

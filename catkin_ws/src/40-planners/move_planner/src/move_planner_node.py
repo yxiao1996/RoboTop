@@ -39,6 +39,10 @@ class MovePlanner(object):
         self.sub_fsm_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
         self.sub_left_open = rospy.Subscriber("~left_open", BoolStamped, self.cbLeftOpen, queue_size=1)
         self.sub_right_open = rospy.Subscriber("~right_open", BoolStamped, self.cbRightOpen, queue_size=1)
+        self.sub_ack_left_shoot = rospy.Subscriber("~ack_left_shoot", BoolStamped, self.cbAckLeftShoot, queue_size=1)
+        self.sub_ack_right_shoot = rospy.Subscriber("~ack_right_shoot", BoolStamped, self.cbAckRightShoot, queue_size=1)
+        self.sub_ack_left_open = rospy.Subscriber("~ack_left_open", BoolStamped, self.cbAckLeftOpen, queue_size=1)
+        self.sub_ack_right_open = rospy.Subscriber("~ack_right_open", BoolStamped, self.cbAckRightOpen, queue_size=1)
         
         # Setup Service
         self.set_joy = rospy.ServiceProxy('/Robo/joy_mapper_node/set_joy', Empty)
@@ -49,6 +53,8 @@ class MovePlanner(object):
         self.open_right = rospy.ServiceProxy('/Robo/serial_encoder_node/open_right', Empty)
         self.close_left = rospy.ServiceProxy('/Robo/serial_encoder_node/close_left', Empty)
         self.close_right = rospy.ServiceProxy('/Robo/serial_encoder_node/close_right', Empty)
+        self.shoot_left = rospy.ServiceProxy('/Robo/serial_encoder_node/shoot_left', Empty)
+        self.shoot_right = rospy.ServiceProxy('/Robo/serial_encoder_node/shoot_right', Empty)
         
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
@@ -63,6 +69,22 @@ class MovePlanner(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbAckLeftShoot(self, msg):
+        if msg.data == True:
+            self.left_shooting = True
+    
+    def cbAckRightShoot(self, msg):
+        if msg.data == True:
+            self.right_shooting = False
+    
+    def cbAckLeftOpen(self, msg):
+        if msg.data == True:
+            self.left_open = False
+    
+    def cbAckRightOpen(self, msg):
+        if msg.data == True:
+            self.right_open = False
 
     def cbSwitch(self, msg):
         self.active = msg.data
@@ -143,6 +165,12 @@ class MovePlanner(object):
             else:
                 while(self.right_open == True):
                     self.open_right()
+        elif self.move == "shoot_left":
+            if self.left_shooting == True:
+                return
+            else:
+                while(self.left_shooting == False):
+                    self.shoot_left()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))

@@ -128,6 +128,10 @@
         <node ns="$(arg veh)" pkg="move_planner" type="move_planner_node.py" name="move_planner_node" output="screen">
             <remap from="/Robo/move_planner_node/set_move" to="/Robo/task_planner_node/set_move"/>
             <remap from="/Robo/move_planner_node/finish_coord" to="/Robo/apriltag_node/coord"/>
+            <remap from="/Robo/move_planner_node/ack_left_shoot" to="/Robo/serial_decoder_node/ack_left_shoot"/>
+            <remap from="/Robo/move_planner_node/ack_right_shoot" to="/Robo/serial_decoder_node/ack_right_shoot"/>
+            <remap from="/Robo/move_planner_node/ack_left_open" to="/Robo/serial_decoder_node/ack_left_open"/>
+            <remap from="/Robo/move_planner_node/ack_right_open" to="/Robo/serial_decoder_node/ack_right_open"/>
         </node>
     </group>
 

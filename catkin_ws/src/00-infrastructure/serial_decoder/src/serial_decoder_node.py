@@ -4,7 +4,7 @@ from std_msgs.msg import String #Imports msg
 #from serial_decoder.ccd import CCD as Decoder
 from serial_decoder.decoder import Decoder
 from Tkinter import *
-from robocon_msgs.msg import CCD_data, Pose2DStamped
+from robocon_msgs.msg import CCD_data, Pose2DStamped, BoolStamped
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
@@ -30,6 +30,10 @@ class decoder_node(object):
         self.ccd_switch = rospy.get_param("~ccd_switch")
         self.odo_switch = rospy.get_param("~odo_switch")
 
+        self.ack_codebook = {
+            "left_shoot": 23
+        }
+
         # setup frequency
         self.frequency = 5.0
         self.Rate = rospy.Rate(self.frequency)
@@ -54,6 +58,11 @@ class decoder_node(object):
         self.pub_odo_debug = rospy.Publisher("~odo_debug", PoseStamped, queue_size=1)
         self.pub_ccd_msg = rospy.Publisher("~ccd_msg",CCD_data, queue_size=1)
         self.pub_debug = rospy.Publisher("~debug", Joy, queue_size=1)
+        self.pub_ack_left_shoot = rospy.Publisher("~ack_left_shoot", BoolStamped, queue_size=1)
+        self.pub_ack_right_shoot = rospy.Publisher("~ack_right_shoot", BoolStamped, queue_size=1)
+        self.pub_ack_left_open = rospy.Publisher("~ack_left_open", BoolStamped, queue_size=1)
+        self.pub_ack_right_open = rospy.Publisher("~ack_right_open", BoolStamped, queue_size=1)
+        
         # Setup Service
         self.srv_offset = rospy.Service("~set_offset", Empty, self.cbSrvOffset)
 
@@ -163,6 +172,12 @@ class decoder_node(object):
                 robot_state[1]["offset"][2] = robot_state[0]["odom"][2]
                 rospy.loginfo("set up offset [%s]"%(robot_state[1]["offset"]))
                 rospy.set_param("/robot_state", robot_state)
+            elif data[0] == self.ack_codebook["left_shoot"]:
+                # ack signal to shoot task
+                msg = BoolStamped()
+                msg.header.stamp = rospy.Time.now()
+                msg.data = True
+                self.pub_ack_left_shoot.publish(msg)
         except Exception as e:
             rospy.loginfo(e)
         return

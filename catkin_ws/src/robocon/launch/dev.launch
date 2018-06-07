@@ -7,12 +7,12 @@
         <arg name="realsense" value="false"/>
         <arg name="joystick" value="true"/>
         <arg name="odo" value="true"/>
-        <arg name="encoder" value="false"/>
+        <arg name="encoder" value="true"/>
 	    <arg name="decoder" value="true"/>
 		<arg name="planner" value="true"/>
         <arg name="apriltag" value="false"/>
         <arg name="roi" value="false"/>
-        <arg name="test" value="false"/>
+        <arg name="test" value="true"/>
         <!--<arg name="/ccd/ccd_detector" value="false"/>-->
     </include>
 </launch>

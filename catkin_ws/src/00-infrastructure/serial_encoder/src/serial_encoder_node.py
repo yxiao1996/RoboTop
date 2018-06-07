@@ -42,6 +42,7 @@ class serial_encoder_node(object):
         # states
         self.button_0 = 0.0
         self.button_1 = 0.0
+        self.fetch_state = 0.0
         self.codebook = CodeBook()
 
         # Save the name of the node
@@ -61,6 +62,8 @@ class serial_encoder_node(object):
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
 
         # action services
+        self.srv_shoot_left = rospy.Service("~shoot_left", Empty, self.cbSrvShootLeft)
+        self.srv_shoot_right = rospy.Service("~shoot_right", Empty, self.cbSrvShootRight)
         self.srv_open_left = rospy.Service("~open_left", Empty, self.cbSrvOpenLeft)
         self.srv_open_right = rospy.Service("~open_right", Empty, self.cbSrvOpenRight)
         self.srv_close_left = rospy.Service("~close_left", Empty, self.cbSrvCloseLeft)
@@ -125,6 +128,18 @@ class serial_encoder_node(object):
         self.cbMove(fetch_msg)
         return EmptyResponse()
 
+    def cbSrvShootLeft(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_left"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
+    def cbSrvShootRight(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_right"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
     def cbMove(self, msg):
         # send move according to message
         move = msg.data
@@ -172,10 +187,21 @@ class serial_encoder_node(object):
         if self.protocol_auto_flag:
             # Using protocol for auto-control
             # Translate data from Twisted2D to JoyRemote
-            data_list = translateCTLtoAuto(msg.v_x/2.0,
-                                        msg.v_y/2.0,
-                                        msg.omega/2.0)
-            
+            #data_list = translateCTLtoAuto(msg.v_x/2.0,
+            #                            msg.v_y/2.0,
+            #                            msg.omega/2.0)
+            data_list = translateAuto(
+                msg.v_x/2.0,
+                msg.v_y/2.0,
+                msg.omega/2.0,
+                -0.2, # fetch position
+                0.6,   # release position
+                self.fetch_state,   # fetch state
+                0.0,   # release speed
+                self.button_0, # fetch!
+                self.button_1  # shoot!
+            )
+
             # Check protocol
             if len(data_list) != len(self.protocol):
                 print "length data list: ", len(data_list)

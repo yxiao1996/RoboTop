@@ -11,7 +11,7 @@ class Tester(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Setup test signal list
-        self.signals = ['joy_off', 'reach_goal', 'reach_goal', 'joy_on']
+        self.signals = ['joy_off', 'reach_goal']
 
         # Read parameters
         self.timestep = self.setupParameter("~timestep",5.0)
