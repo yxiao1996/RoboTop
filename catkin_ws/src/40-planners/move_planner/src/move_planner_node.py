@@ -77,12 +77,10 @@ class MovePlanner(object):
             self.apriltag_flag = True
 
     def cbAckLeftShoot(self, msg):
-        if msg.data == True:
-            self.left_shooting = True
+        self.left_shooting = msg.data
     
     def cbAckRightShoot(self, msg):
-        if msg.data == True:
-            self.right_shooting = False
+        self.right_shooting = msg.data
     
     def cbAckLeftOpen(self, msg):
         if msg.data == True:
@@ -131,7 +129,7 @@ class MovePlanner(object):
         # move_msg.data = self.move
         #self.pub_move.publish(move_msg)
         if self.move == 'sleep':
-            rospy.sleep(5)
+            rospy.sleep(2)
         elif self.move == 'throw':
             rospy.sleep(10)
         elif self.move == 'joy':
@@ -179,6 +177,12 @@ class MovePlanner(object):
             self.apriltag_flag = False
             while(self.apriltag_flag == False):
                 self.cmd_rate.sleep()
+        elif self.move == "wait_shoot":
+            if self.left_shooting == False and self.right_shooting == False:
+                return
+            else:
+                while(self.left_shooting or self.right_shooting):
+                    self.cmd_rate.sleep()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))

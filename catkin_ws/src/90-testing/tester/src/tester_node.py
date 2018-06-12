@@ -11,10 +11,10 @@ class Tester(object):
         rospy.loginfo("[%s] Initialzing." %(self.node_name))
 
         # Setup test signal list
-        self.signals = ['joy_off', 'reach_goal']
+        self.signals = ['joy_off', 'reach_goal', 'reach_goal', 'reach_goal', 'reach_goal', 'reach_goal', 'reach_goal']
 
         # Read parameters
-        self.timestep = self.setupParameter("~timestep",5.0)
+        self.timestep = self.setupParameter("~timestep",3.0)
 
         # Setup service provider
         self.start_test = rospy.Service('~start_test', Empty, self.cbSrvStart)

@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import String #Imports msg
 #from serial_decoder.ccd import CCD as Decoder
 from serial_decoder.decoder import Decoder
+from serial_decoder.arduino_decoder import ArduinoDecoder
 from Tkinter import *
 from robocon_msgs.msg import CCD_data, Pose2DStamped, BoolStamped
 from sensor_msgs.msg import Joy
@@ -17,10 +18,12 @@ from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 class decoder_node(object):
     def __init__(self):
         self.debug_flag = True
-        
+        self.arduino_flag = False
+
         # Init Decoder
         self.baudrate = rospy.get_param("~baudrate")
         self.decoder = Decoder(self.baudrate)
+        self.arduino_decoder = ArduinoDecoder(115200)
         
         # Set decoder protocol
         self.total_length = rospy.get_param("~total_length")
@@ -69,8 +72,10 @@ class decoder_node(object):
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
         # Create a timer that calls the process function every 1.0 second
-        # self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbprocess)
+        self.arduino_timer = rospy.Timer(rospy.Duration.from_sec(1.0),self.cbStartArd, oneshot=True)
         self.debug_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbdebug)
+
+        #rospy.sleep(rospy.Duration.from_sec(1))
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
     def setupParameter(self,param_name,default_value):
@@ -78,6 +83,10 @@ class decoder_node(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbStartArd(self, _event):
+        self.arduino_flag = True
+        print "start arduino communication"
 
     def cbSrvOffset(self,req):
         # update robot state parameter
@@ -90,10 +99,15 @@ class decoder_node(object):
 
     def cbdebug(self, event):
         # Read data list from serial port
-        data_list = self.decoder.read_debug(self.total_length)
+        #data_list = self.decoder.read_debug(self.total_length)
 
         # Parse and process data
-        self.parse_data(data_list)
+        #self.parse_data(data_list)
+
+        # read data from arduino
+        if self.arduino_flag:
+            ard_data_list = self.arduino_decoder.read_debug()
+            print ard_data_list
 
     def cbprocess(self,event):
         
