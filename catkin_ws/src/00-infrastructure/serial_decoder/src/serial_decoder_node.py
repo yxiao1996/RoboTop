@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plot
 import struct
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 """
 odometry
@@ -89,6 +90,10 @@ class decoder_node(object):
         self.pub_debug = rospy.Publisher("~debug", Joy, queue_size=1)
         # Setup subscriber
         #self.sub_topic_b = rospy.Subscriber("~topic_b", String, self.cbTopic)
+
+         # Setup Service
+        self.srv_offset = rospy.Service("~set_offset", Empty, self.cbSrvOffset)
+        
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
         # Create a timer that calls the process function every 1.0 second
@@ -104,6 +109,15 @@ class decoder_node(object):
 
     #def cbTopic(self,msg):
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
+
+    def cbSrvOffset(self,req):
+        # update robot state parameter
+        robot_state = rospy.get_param("/robot_state")
+        robot_state[1]["offset"][0] = robot_state[0]["odom"][0]
+        robot_state[1]["offset"][1] = robot_state[0]["odom"][1]
+        robot_state[1]["offset"][2] = robot_state[0]["odom"][2]
+        rospy.set_param("/robot_state", robot_state)
+        return EmptyResponse()
 
     def cbdebug(self, event):
         # Read data list from serial port
@@ -179,7 +193,7 @@ class decoder_node(object):
             assert len(data_list) == self.data_length[0]
             for raw in data_list:
                 data = struct.unpack('B', "".join(raw))[0]
-                rospy.loginfo("revice ack info [%s]"%(data))
+                #rospy.loginfo("revice ack info [%s]"%(data))
         except Exception as e:
             rospy.loginfo(e)
         return
@@ -246,7 +260,7 @@ class decoder_node(object):
                 raw = struct.unpack('f', "".join(neg_raw))[0]
                 rawValue.append(raw)
 
-            rospy.loginfo("%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]))
+            #rospy.loginfo("%10.4f, %10.4f, %10.4f" % (-rawValue[3], rawValue[4], rawValue[0]))
             
             check = True
             if check:

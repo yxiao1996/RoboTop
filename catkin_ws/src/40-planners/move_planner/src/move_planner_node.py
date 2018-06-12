@@ -79,11 +79,12 @@ class MovePlanner(object):
         #self.pub_move.publish(move_msg)
         if self.move == 'sleep':
             rospy.loginfo("start sleep")
-            rospy.sleep(rospy.Duration.from_sec(5))
+            rospy.sleep(rospy.Duration.from_sec(2))
         elif self.move == 'throw':
             rospy.sleep(10)
         elif self.move == 'joy':
             self.set_joy()
+            return
         elif self.move == 'fetch':
             #self.release()
             self.open_left()

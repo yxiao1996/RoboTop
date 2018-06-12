@@ -84,6 +84,7 @@
             <remap from="/Robo/serial_encoder_node/odo_data" to="/Robo/odo_control_node/twist2d"/>
             <remap from="/Robo/serial_encoder_node/pid_data" to="/Robo/pid_control_node/twist2d"/>
             <remap from="/Robo/serial_encoder_node/move_data" to="/Robo/move_planner_node/move"/>
+            <remap from="/Robo/serial_encoder_node/joy" to="/Robo/joy"/>
         </node>
     </group>
 

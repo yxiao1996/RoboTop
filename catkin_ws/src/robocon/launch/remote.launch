@@ -2,10 +2,13 @@
     <include file="$(find robocon)/launch/master.launch">
         <arg name="fsm" value="true"/>
         <arg name="camera" value="false"/>
-        <arg name="joystick" value="false"/>
-        <arg name="odo" value="false"/>
+        <arg name="joystick" value="true"/>
+        <arg name="odo" value="true"/>
         <arg name="encoder" value="true"/>
-	    <arg name="decoder" value="true"/>
+	    <arg name="decoder" value="treu"/>
+        <arg name="planner" value="true"/>
+        <arg name="apriltag" value="false"/>
+        <arg name="viz_odom" value="false"/>
         <arg name="protocol_auto_flag" value="false"/>
         <!--<arg name="/ccd/ccd_detector" value="false"/>-->
     </include>

@@ -3,8 +3,8 @@
         <arg name="fsm" value="false"/>
         <arg name="camera" value="false"/>
         <arg name="joystick" value="true"/>
-        <arg name="odo" value="false"/>
-        <arg name="encoder" value="false"/>
+        <arg name="odo" value="true"/>
+        <arg name="encoder" value="true"/>
 	    <arg name="decoder" value="false"/>
         <arg name="planner" value="false"/>
         <arg name="apriltag" value="false"/>

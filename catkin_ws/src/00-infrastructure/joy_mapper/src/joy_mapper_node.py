@@ -21,15 +21,18 @@ class JoyMapperNode(object):
         # Setup publishers
         self.pub_car_cmd = rospy.Publisher("~car_cmd",Twist, queue_size=1)
         self.pub_joy_auto = rospy.Publisher("~joy_auto", JoyAuto, queue_size=1)
-        self.pub_joy_remo = rospy.Publisher("~joy_remote", JoyRemote, queue_size=1)
+        self.pub_joy_remo = rospy.Publisher("~joy_remote", JoyRemote, queue_size=5)
         self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
-        self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy)
+        self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy, queue_size=5)
         # Setup service
         self.srv_joy = rospy.Service("~set_joy", Empty, self.cbSrvJoy)
+        # Setup service proxy
+        self.next_task = rospy.ServiceProxy("/task_planner/next_macro",  Empty)
+        self.set_offset = rospy.ServiceProxy("/serial_decoder_node/set_offset", Empty)
         
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
         # Create a timer that calls the cbTimer function every 1.0 second
         self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
         
@@ -56,12 +59,12 @@ class JoyMapperNode(object):
         self.joy = joy_msg
         self.publishControl()
         self.processButtons(joy_msg)
-        rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
+        #rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
 
     def publishControl(self):
-        button_scalar = 0.4
+        button_scalar = 0.2
         # Forward and Backward ax
-        forward_ax = self.joy.axes[4]
+        forward_ax = self.joy.axes[1]
         forward_bt = self.joy.axes[7]
         if abs(forward_ax) > 0.0 and abs(forward_bt) > 0.0:
             # Both ax and button push, not allowed
@@ -73,7 +76,7 @@ class JoyMapperNode(object):
                 forward_ctl = forward_bt * button_scalar
         
         # Left and right ax
-        left_ax = self.joy.axes[3]
+        left_ax = self.joy.axes[0]
         left_bt = self.joy.axes[6]
         if abs(left_ax) > 0.0 and abs(left_bt) > 0.0:
             # Both ax and button push, not allowed
@@ -85,7 +88,7 @@ class JoyMapperNode(object):
                 left_ctl = left_bt * button_scalar
 
         # Rotation
-        rot_ax = self.joy.axes[1]
+        rot_ax = self.joy.axes[3]
         rot_l = self.joy.buttons[4]
         rot_r = self.joy.buttons[5]
         if rot_l == 1 and rot_r == 1:
@@ -150,6 +153,15 @@ class JoyMapperNode(object):
             joy_override_msg.data = True
             self.pub_buttons.publish(joy_override_msg)
 
+        # next task button
+        if joy_msg.buttons[3] == True:
+            rospy.loginfo("[%s] next macro task button pressed, calling service"%(self.node_name))
+            self.next_task()
+
+        # set offset button
+        if joy_msg.buttons[2] == True:
+            rospy.loginfo("[%s] set offset button pressed, calling service"%(self.node_name))
+            self.set_offset()
         return
 
     def cbTimer(self, _):

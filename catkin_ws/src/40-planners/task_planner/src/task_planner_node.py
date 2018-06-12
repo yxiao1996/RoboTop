@@ -51,6 +51,7 @@ class task_planner_node(object):
         self.sub_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
         
         # Setup serivice
+        self.srv_next_macro = rospy.Service("/task_planner/next_macro", Empty, self.cbSrvNextMacro)
         self.srv_move_fin = rospy.Service("/task_planner/move_fin", Empty, self.cbSrvMoveFin)
         self.srv_move_fin = rospy.Service("/task_planner/path_fin", Empty, self.cbSrvPathFin)
 
@@ -74,6 +75,28 @@ class task_planner_node(object):
 
     def cbState(self, msg):
         self.state = msg.state
+
+    def cbSrvNextMacro(self, req):
+        # switch to next macro task
+        # I receive positive confirm, switch to next task
+        try:
+            # Try to pop the next macrotask
+            self.macro_task_index += 1
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+            self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
+        except:
+            # Or its the last task
+            # Try to pop the next macrotask
+            self.macro_task_index = 0
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+            self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
+
+        rospy.loginfo("[%s] joystick control next task poped"%(self.node_name))
+        return EmptyResponse()
 
     def cbSrvMoveFin(self, req):
         msg = BoolStamped()
@@ -172,7 +195,7 @@ class task_planner_node(object):
                 # Publish finish message
                 finish_msg = BoolStamped()
                 finish_msg.header.stamp = rospy.Time.now()
-                finish_msg.data = False
+                finish_msg.data = True
                 #self.pub_finish.publish(finish_msg)
                 self.cbFinishCoord(finish_msg)
             return

@@ -2,12 +2,15 @@
 import rospy
 from std_msgs.msg import String #Imports msg
 from serial_encoder.encoder import SerialEncoder as Encoder
+from sensor_msgs.msg import Joy
+from robocon_msgs.msg import JoyAuto, JoyRemote, BoolStamped
 from serial_encoder.translater import translateAuto, translateRemote, translateCTLtoAuto, translateCTLtoRemote, translateCTLtoMove
 from robocon_msgs.msg import CCD_data, Twist2DStamped, JoyRemote, JoyAuto, BoolStamped
 from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 import numpy as np
 import matplotlib.pyplot as plt 
 import plot
+from serial_encoder.joy_mapper import MapAxes
 
 class serial_encoder_node(object):
     def __init__(self):
@@ -50,13 +53,15 @@ class serial_encoder_node(object):
 
         # Setup subscriber
         self.sub_joy_auto = rospy.Subscriber("~joy_auto", JoyAuto, self.cbJoyData, queue_size=1)
-        self.sub_joy_remo = rospy.Subscriber("~joy_remote", JoyRemote, self.cbJoyData)
+        self.sub_joy_remo = rospy.Subscriber("~joy_remote", JoyRemote, self.cbJoyData, queue_size=5)
         self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_move_data = rospy.Subscriber("~move_data", String, self.cbMove, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
+        #self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy, queue_size=5)
+        
         # Read parameters
-        self.pub_timestep = self.setupParameter("~pub_timestep",0.01)
+        self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
 
         # action services
         self.srv_open_left = rospy.Service("~open_left", Empty, self.cbSrvOpenLeft)
@@ -68,7 +73,7 @@ class serial_encoder_node(object):
         self.srv_vertical = rospy.Service("~vertical", Empty, self.cbSrvVertical)
         self.srv_horizontal = rospy.Service("~horizontal", Empty, self.cbSrvHorizontal)
         # Create a timer that calls the process function every 1.0 second
-        #self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbDisplay)
+        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbJoyControl)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -77,6 +82,22 @@ class serial_encoder_node(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbJoyControl(self, msg):
+        # Check fsm state: joystick control
+        if self.joystick_state != True:
+            return
+
+    def cbJoy(self, msg):
+        self.forward_ctl, self.left_ctl, self.rot_ctl = MapAxes(msg)
+        #joy_msg = JoyRemote()
+        #joy_msg.channel_0 = forward_ctl
+        #joy_msg.channel_1 = left_ctl
+        #joy_msg.channel_2 = rot_ctl
+        #joy_msg.channel_3 = 0.0
+        #joy_msg.button_0 = 0.0
+        #joy_msg.button_1 = 0.0
+        #self.cbJoyData(joy_msg)
 
     def cbState(self, msg):
         self.joystick_state = msg.data
@@ -255,20 +276,20 @@ class serial_encoder_node(object):
             self.display(data_list)
 
         # Write data to serial port
-        rospy.loginfo("*************************************************")        
+        #rospy.loginfo("*************************************************")        
         # Then send joystick data
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
             if self.display_buffer == self.display_every - 1:
-                rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+                #rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
         self.encoder.write(13)
         self.encoder.write(10)
-        self.display_buffer = (self.display_buffer + 1) % self.display_every
+        #self.display_buffer = (self.display_buffer + 1) % self.display_every
         # To meet the protocal send 12 zeros
         # for i in range(12):
         #     self.encoder.write(0)
 
-        self.Rate.sleep()
+        #self.Rate.sleep()
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))
