@@ -24,7 +24,7 @@ class JoyMapperNode(object):
         self.pub_joy_remo = rospy.Publisher("~joy_remote", JoyRemote, queue_size=5)
         self.pub_buttons = rospy.Publisher("~joystick_override", BoolStamped, queue_size=1)
         # Setup subscriber
-        self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy, queue_size=5)
+        self.sub_joy = rospy.Subscriber("/Robo/joy", Joy, self.cbJoy, queue_size=5)
         # Setup service
         self.srv_joy = rospy.Service("~set_joy", Empty, self.cbSrvJoy)
         # Setup service proxy
@@ -34,7 +34,7 @@ class JoyMapperNode(object):
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
         # Create a timer that calls the cbTimer function every 1.0 second
-        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
+        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
         
         self.v_gain = 100
         self.omega_gain = 10

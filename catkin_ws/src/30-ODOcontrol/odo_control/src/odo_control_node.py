@@ -243,11 +243,15 @@ class odo_control_node(object):
             #else:
             #    omega = -self.sigmoid(error_theta / 90.0) * 1.0
             elif error_theta > 0.0:
+                v_x = 0.0
+                v_y = 0.0
                 if abs(error_theta) > 10.0:
                     omega = -0.3
                 else:
                     omega = -0.1
             else:
+                v_x = 0.0
+                v_y = 0.0
                 if abs(error_theta) > 10.0:
                     omega = 0.3
                 else:

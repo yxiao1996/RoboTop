@@ -1,5 +1,6 @@
 import serial
 import struct
+import time
 
 class Decoder():
     def __init__(self, baudrate, master=None):
@@ -27,6 +28,10 @@ class Decoder():
         data_list = []
         while(True):
             #if len(data_list) < length:
+            if self.ser.in_waiting > 0:
+                time.sleep(0.001)
+            else:
+                continue
             msg = self.ser.read()
             data = struct.unpack('B', msg)[0]
             if data != 13:

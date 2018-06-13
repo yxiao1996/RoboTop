@@ -5,7 +5,7 @@
         <arg name="joystick" value="true"/>
         <arg name="odo" value="true"/>
         <arg name="encoder" value="true"/>
-	    <arg name="decoder" value="treu"/>
+	    <arg name="decoder" value="true"/>
         <arg name="planner" value="true"/>
         <arg name="apriltag" value="false"/>
         <arg name="viz_odom" value="false"/>

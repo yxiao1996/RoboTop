@@ -58,7 +58,7 @@ class serial_encoder_node(object):
         self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
         self.sub_move_data = rospy.Subscriber("~move_data", String, self.cbMove, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
-        #self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy, queue_size=5)
+        self.sub_joy = rospy.Subscriber("~joy", Joy, self.cbJoy, queue_size=5)
         
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
@@ -73,7 +73,7 @@ class serial_encoder_node(object):
         self.srv_vertical = rospy.Service("~vertical", Empty, self.cbSrvVertical)
         self.srv_horizontal = rospy.Service("~horizontal", Empty, self.cbSrvHorizontal)
         # Create a timer that calls the process function every 1.0 second
-        #self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbJoyControl)
+        self.timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbJoyControl)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -87,16 +87,23 @@ class serial_encoder_node(object):
         # Check fsm state: joystick control
         if self.joystick_state != True:
             return
+        try:
+            self.cbJoyData(self.joy_msg)
+        except:
+            return
 
     def cbJoy(self, msg):
         self.forward_ctl, self.left_ctl, self.rot_ctl = MapAxes(msg)
-        #joy_msg = JoyRemote()
-        #joy_msg.channel_0 = forward_ctl
-        #joy_msg.channel_1 = left_ctl
-        #joy_msg.channel_2 = rot_ctl
-        #joy_msg.channel_3 = 0.0
-        #joy_msg.button_0 = 0.0
-        #joy_msg.button_1 = 0.0
+        button_0 = msg.buttons[0]
+        button_1 = msg.buttons[1]
+        joy_msg = JoyRemote()
+        joy_msg.channel_0 = self.forward_ctl
+        joy_msg.channel_1 = self.left_ctl
+        joy_msg.channel_2 = self.rot_ctl
+        joy_msg.channel_3 = 0.0
+        joy_msg.button_0 = button_0
+        joy_msg.button_1 = button_1
+        self.joy_msg = joy_msg
         #self.cbJoyData(joy_msg)
 
     def cbState(self, msg):
@@ -280,8 +287,8 @@ class serial_encoder_node(object):
         # Then send joystick data
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
-            if self.display_buffer == self.display_every - 1:
-                #rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            #if self.display_buffer == self.display_every - 1:
+            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
         self.encoder.write(13)
         self.encoder.write(10)
         #self.display_buffer = (self.display_buffer + 1) % self.display_every
