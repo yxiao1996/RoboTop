@@ -1,15 +1,18 @@
 import serial
+import os
 
 class SerialEncoder():
     def __init__(self, baudrate):
         self.initThread(baudrate=baudrate)
 
-    def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
+    def initThread(self, com='/dev/ttyUSB-mcu', baudrate=115200):
         #baudrate = 230400
-        try:
-            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
-        except:
-            self.ser = serial.Serial('/dev/ttyUSB1', baudrate=baudrate, timeout=1)
+        #try:
+        os.chdir("/home/robocon/RoboTop")
+        os.system("./set_serial.sh")
+        self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        #except:
+        #    self.ser = serial.Serial('/dev/ttyUSB1', baudrate=baudrate, timeout=1)
         # Debug
         print "Serial Port Configuration"
         print "bytesize: ", self.ser.bytesize

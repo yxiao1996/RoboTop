@@ -1,3 +1,5 @@
+import os
+import rospy
 import serial
 import struct
 
@@ -12,21 +14,31 @@ class Decoder():
         self.update_flag = 0
         self.initThread(baudrate=baudrate)
         
-    def initThread(self, com='/dev/ttyUSB0', baudrate=115200):
+    def initThread(self, com='/dev/ttyUSB-mcu', baudrate=115200):
         #baudrate = 230400
-        try:
-            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
-        except:
-            com = '/dev/ttyUSB1'
-            self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        #try:
+        os.chdir("/home/robocon/RoboTop")
+        os.system("./set_serial.sh")
+        self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        print "use serial port ", com
+        #except:
+        #    com = '/dev/ttyUSB1'
+        #    self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+        #    print "use serial port ", com
 
     def read_debug(self, length=6):
         self.ser.flushInput()
         #msg = self.ser.read(length)
         #return msg
         data_list = []
-        while(True):
+        start = rospy.Time.now()
+        delta_t = 0.0
+        while(delta_t < 0.01):
+            delta_t = (rospy.Time.now()-start).to_sec()
             #if len(data_list) < length:
+            if self.ser.in_waiting == 0:
+                continue
+            #print self.ser.in_waiting
             msg = self.ser.read()
             data = struct.unpack('B', msg)[0]
             if data != 13:
@@ -43,7 +55,7 @@ class Decoder():
                 else:
                     #print "**"
                     data_list.append(msg)
-                    msg = self.ser.read(length )
+                    msg = self.ser.read(length)
                     data_list.append(msg)
                     msg = self.ser.read()
                     data = struct.unpack('B', msg)[0]
@@ -62,7 +74,7 @@ class Decoder():
                             data_list.append(msg)
                             return data_list
 
-
+        return [[0], [0, 0, 0], [0]]
         msg = self.ser.read(length)
         return msg
         while(True):
@@ -83,3 +95,6 @@ class Decoder():
                 #print (data_list)
                 #time.sleep(0.5)
                 return data_list
+if __name__ == "__main__":
+    d = Decoder(57600)
+    print d.read_debug()

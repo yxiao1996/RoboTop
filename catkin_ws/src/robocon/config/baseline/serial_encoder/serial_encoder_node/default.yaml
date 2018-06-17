@@ -15,5 +15,5 @@ protocol_remote:
    - "channel_3"
    - "button_0"
    - "button_1"
-baudrate: 115200
-update_frequency: 10
+baudrate: 19200
+update_frequency: 20

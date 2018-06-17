@@ -36,6 +36,8 @@ class JoyMapperNode(object):
         
         self.v_gain = 100
         self.omega_gain = 10
+        self.count_stamp = 0
+        self.latency_buffer = 0
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -63,6 +65,17 @@ class JoyMapperNode(object):
 
     def cbJoy(self,joy_msg):
         self.joy = joy_msg
+        #stamp = joy_msg.header.stamp
+        #latency = rospy.Time.now() - stamp
+        #if self.count_stamp < 100:
+        #    self.latency_buffer += latency
+        #    self.count_stamp += 1
+        #else:
+        #    self.count_stamp = 0
+        #    self.latency_buffer = 0
+        #    self.average_latency = self.latency_buffer / 100.0
+        #    rospy.loginfo("average latency at [%s] is [%s]" %(self.node_name, average_latency))
+
         self.publishControl()
         self.processButtons(joy_msg)
         #rospy.loginfo("[%s] %s" %(self.node_name,joy_msg.buttons))
@@ -70,7 +83,7 @@ class JoyMapperNode(object):
     def publishControl(self):
         button_scalar = 0.4
         # Forward and Backward ax
-        forward_ax = self.joy.axes[4]
+        forward_ax = self.joy.axes[1]
         forward_bt = self.joy.axes[7]
         if abs(forward_ax) > 0.0 and abs(forward_bt) > 0.0:
             # Both ax and button push, not allowed
@@ -82,7 +95,7 @@ class JoyMapperNode(object):
                 forward_ctl = forward_bt * button_scalar
         
         # Left and right ax
-        left_ax = self.joy.axes[3]
+        left_ax = self.joy.axes[0]
         left_bt = self.joy.axes[6]
         if abs(left_ax) > 0.0 and abs(left_bt) > 0.0:
             # Both ax and button push, not allowed
@@ -94,7 +107,7 @@ class JoyMapperNode(object):
                 left_ctl = left_bt * button_scalar
 
         # Rotation
-        rot_ax = self.joy.axes[1]
+        rot_ax = self.joy.axes[3]
         rot_l = self.joy.buttons[4]
         rot_r = self.joy.buttons[5]
         if rot_l == 1 and rot_r == 1:

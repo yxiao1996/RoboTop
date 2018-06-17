@@ -1,27 +1,26 @@
 macro_tasks:
   macro_task_0:
+  - move: shoot_right
+    path:
+    - [0.0, 0.0, 0.0]
+
+  - move: fetch
+    path:
+    - [0.0, 0.0, 0.0]
+
   - move: sleep
     path:
-    - [500.0, 0.0, 0.0]
-  - move: sleep
+    - [0.0, 0.0, 0.0]
+  
+  - move: release
     path:
-    - [0.0, 500.0, 0.0]
-  - move: sleep
+    - [0.0, 0.0, 0.0]
+
+  - move: lit
     path:
-    - [500.0, 500.0, 0.0]
+    - [0.0, 0.0, 0.0] 
+
   - move: apriltag
     path:
     - [0.0, 0.0, 0.0]
-  macro_task_1:
-  - move: sleep
-    path:
-    - [500.0, 0.0, 0.0]
-  - move: sleep
-    path:
-    - [0.0, 500.0, 0.0]
-  - move: sleep
-    path:
-    - [500.0, 500.0, 0.0]
-  - move: sleep
-    path:
-    - [0.0, 0.0, 0.0]
+

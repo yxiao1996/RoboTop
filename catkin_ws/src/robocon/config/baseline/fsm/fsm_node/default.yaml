@@ -26,6 +26,11 @@ events:
     topic: "task_planner_node/finish"
     msg_type: "BoolStamped"
     trigger: True
+ 
+  task_reset:
+    topic: "task_planner_node/reset"
+    msg_type: "BoolStamped"
+    trigger: True
 
 global_transitions:
   joystick_override_on: "JOYSTICK_CONTROL"
@@ -62,6 +67,7 @@ states:
   LINE_FOLLOWING:
     transitions:
       reach_dest: "AT_GOAL"
+      task_reset: "PLANNING"
     active_nodes:
     - ccd_filter_node
     - ccd_control_node
@@ -70,6 +76,7 @@ states:
   AT_GOAL:
     transitions:
       task_finish: "PLANNING"
+      task_reset: "PLANNING"
     active_nodes:
     - pid_control_node
     - move_planner_node

@@ -38,13 +38,15 @@ def translateAuto(channel_0, channel_1, channel_2, channel_3, channel_4, channel
     data_list.append(np.uint8((channel_0 + 1) * 127))
     data_list.append(np.uint8((channel_1 + 1) * 127))
     data_list.append(np.uint8((channel_2 + 1) * 127))
-    data_list.append(np.uint8((channel_3 + 1) * 127))
+    data_list.append(np.uint8((channel_3)))
     data_list.append(np.uint8((channel_4 + 1) * 127))
     data_list.append(np.uint8((channel_5 + 1) * 127))
     data_list.append(np.uint8((channel_6 + 1) * 127))
     data_list.append(np.uint8((channel_7)))
     data_list.append(np.uint8((channel_8)))
-
+    
+    if abs(data_list[1] - 127) < 5:
+        data_list[1] = 127
     # Normalize control values
     """
     v_x_norm = sigmoid(v_x)
@@ -96,7 +98,7 @@ def translateCTLtoAuto(v_x, v_y, omega):
     data_list.append(np.uint8((channel_0 + 1) * 127))
     data_list.append(np.uint8((channel_1 + 1) * 127))
     data_list.append(np.uint8((channel_2 + 1) * 127))
-    data_list.append(np.uint8((channel_3 + 1) * 127))
+    data_list.append(np.uint8((channel_3)))
     data_list.append(np.uint8((channel_4 + 1) * 127))
     data_list.append(np.uint8((channel_5 + 1) * 127))
     data_list.append(np.uint8((channel_6 + 1) * 127))
@@ -105,7 +107,7 @@ def translateCTLtoAuto(v_x, v_y, omega):
 
     return data_list
 
-def translateCTLtoMove(pos_get, pos_throw, speed_get, speed_throw, cmd_claw, cmd_throw):
+def translateCTLtoMove(shoot, pos_throw, speed_get, speed_throw, cmd_claw, cmd_throw):
     # translate control message to joystick message
     data_list = []
 
@@ -113,7 +115,7 @@ def translateCTLtoMove(pos_get, pos_throw, speed_get, speed_throw, cmd_claw, cmd
     channel_0 = 0.0
     channel_1 = 0.0
     channel_2 = 0.0
-    channel_3 = pos_get
+    channel_3 = shoot
     channel_4 = pos_throw
     channel_5 = speed_get
     channel_6 = speed_throw
@@ -124,7 +126,7 @@ def translateCTLtoMove(pos_get, pos_throw, speed_get, speed_throw, cmd_claw, cmd
     data_list.append(np.uint8((channel_0 + 1) * 127))
     data_list.append(np.uint8((channel_1 + 1) * 127))
     data_list.append(np.uint8((channel_2 + 1) * 127))
-    data_list.append(np.uint8((channel_3 + 1) * 127))
+    data_list.append(np.uint8((channel_3)))
     data_list.append(np.uint8((channel_4 + 1) * 127))
     data_list.append(np.uint8((channel_5 + 1) * 127))
     data_list.append(np.uint8((channel_6 + 1) * 127))

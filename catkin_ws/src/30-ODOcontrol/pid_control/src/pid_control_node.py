@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import String #Imports msg
+from std_msgs.msg import String, Int32
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, Twist2DStamped
 from dynamic_reconfigure.server import Server
 from pid_control.cfg import pidConfig
 import numpy as np
 import math
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 def cbConfigure(config, level):
     rospy.loginfo("""Reconfigure Request: {kp}, {ki}, {kd}""".format(**config))
@@ -20,6 +21,7 @@ class PIDcontrolnode(object):
 
         # set state buffer
         self.active = False
+        self.adjust_angle_flag = False
 
         # Setup publishers
         self.pub_twist2d = rospy.Publisher("~twist2d",Twist2DStamped, queue_size=1)
@@ -27,6 +29,7 @@ class PIDcontrolnode(object):
         self.cur_pos_update = rospy.Subscriber("~cur_pos_update", Pose2DStamped, self.pidUpdate)
         self.ref_pos_update = rospy.Subscriber("~ref_pos_update", Pose2DStamped, self.setAimPos)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
+        self.sub_delta_y = rospy.Subscriber("~delta_y", Int32, self.cbDeltaY, queue_size=1)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.05)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -52,6 +55,12 @@ class PIDcontrolnode(object):
         self.omega = 0.0
         # rqt reconfigure
         self.srv = Server(pidConfig, self.cbConfigure)
+   
+        # Setup services
+        self.srv_adjust_angle = rospy.Service("~adjust_angle", Empty, self.cbAdjustAngle)
+        self.delta_y_thresh = 10.0
+        self.k_delta_y = 0.001
+        self.delta_y = 0.0
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -61,12 +70,41 @@ class PIDcontrolnode(object):
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
 
+    def cbDeltaY(self, msg):
+        self.delta_y = float(msg.data)
+
     def cbSwitch(self, msg):
         self.active = msg.data
+
+    def cbAdjustAngle(self, req):
+        self.adjust_angle_flag = True
+        while(abs(self.delta_y) > self.delta_y_thresh):
+            # if delta_y is positive turn left(positive), if delta_y is negative turn right(negative)
+            omega = self.delta_y * self.k_delta_y
+            x = y = 0.0
+            msg = Twist2DStamped()
+            msg.v_x = x
+            msg.v_y = y
+            msg.omega = omega
+            self.pub_twist2d.publish(msg)
+            rospy.loginfo("current delta y [%s], current omega [%s]" %(self.delta_y, omega))
+        self.adjust_angle_flag = False
+        return EmptyResponse()
+
+    def cbSrvOffset(self, req):
+        # update robot state parameter
+        robot_state = rospy.get_param("/robot_state")
+        robot_state[0]["offset"][0] = robot_state[0]["odom"][0]
+        robot_state[0]["offset"][1] = robot_state[0]["odom"][1]
+        robot_state[0]["offset"][2] = robot_state[0]["odom"][2]
+        rospy.set_param("/robot_state", robot_state)
+        return EmptyResponse()
 
     def pidUpdate(self,msg):
         if self.active == False:
             return
+        if self.adjust_angle_flag:
+            return 
         #rospy.loginfo("[%s] %s" %(self.node_name,msg.data))
 	    if msg.x == 0.0 and msg.y == 0.0 and msg.theta == 0.0:
 	        return

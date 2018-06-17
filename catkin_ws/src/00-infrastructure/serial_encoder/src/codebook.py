@@ -53,7 +53,7 @@ class CodeBook(object):
                 button_1 = self.shoot_dict[self.shoot_state]["button_1"]
             return button_0, button_1
             
-TEST = True
+TEST = False
 if TEST:
     c = CodeBook()
     print c.lookup('fetch_0'), c.fetch_state

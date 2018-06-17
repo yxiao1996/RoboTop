@@ -16,7 +16,16 @@ class serial_encoder_node(object):
         self.protocol_auto = rospy.get_param("~protocol_auto")
         self.protocol_remote = rospy.get_param("~protocol_remote")
         self.baudrate = rospy.get_param("~baudrate")
-        self.encoder = Encoder(self.baudrate)
+        
+        connect_success = False
+        while(connect_success==False):
+            # try to connect
+            try:
+                self.encoder = Encoder(self.baudrate)
+                connect_success = True
+            except Exception as e:
+                print e
+                rospy.sleep(0.1)
         self.joystick_state = True
 
         # setup frequency
@@ -52,10 +61,10 @@ class serial_encoder_node(object):
         rospy.loginfo("[%s]: baudrate: [%s]" %(self.node_name, self.baudrate))
 
         # Setup subscriber
-        self.sub_joy_auto = rospy.Subscriber("~joy_auto", JoyAuto, self.cbJoyData, queue_size=1)
-        self.sub_joy_remo = rospy.Subscriber("~joy_remote", JoyRemote, self.cbJoyData)
-        self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtlData, queue_size=1)
-        self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtlData, queue_size=1)
+        self.sub_joy_auto = rospy.Subscriber("~joy_auto", JoyAuto, self.cbJoy, queue_size=1)
+        self.sub_joy_remo = rospy.Subscriber("~joy_remote", JoyRemote, self.cbJoy)
+        self.sub_odo_data = rospy.Subscriber("~odo_data", Twist2DStamped, self.cbCtl, queue_size=1)
+        self.sub_pid_data = rospy.Subscriber("~pid_data", Twist2DStamped, self.cbCtl, queue_size=1)
         self.sub_move_data = rospy.Subscriber("~move_data", String, self.cbMove, queue_size=1)
         self.sub_mode = rospy.Subscriber("~switch", BoolStamped, self.cbState)
         # Read parameters
@@ -64,6 +73,10 @@ class serial_encoder_node(object):
         # action services
         self.srv_shoot_left = rospy.Service("~shoot_left", Empty, self.cbSrvShootLeft)
         self.srv_shoot_right = rospy.Service("~shoot_right", Empty, self.cbSrvShootRight)
+        self.srv_shoot_left = rospy.Service("~shoot_left_2", Empty, self.cbSrvShootLeft_2)
+        self.srv_shoot_right = rospy.Service("~shoot_right_2", Empty, self.cbSrvShootRight_2)
+        self.srv_shoot_left = rospy.Service("~shoot_left_3", Empty, self.cbSrvShootLeft_3)
+        self.srv_shoot_right = rospy.Service("~shoot_right_3", Empty, self.cbSrvShootRight_3)
         self.srv_open_left = rospy.Service("~open_left", Empty, self.cbSrvOpenLeft)
         self.srv_open_right = rospy.Service("~open_right", Empty, self.cbSrvOpenRight)
         self.srv_close_left = rospy.Service("~close_left", Empty, self.cbSrvCloseLeft)
@@ -73,7 +86,7 @@ class serial_encoder_node(object):
         self.srv_vertical = rospy.Service("~vertical", Empty, self.cbSrvVertical)
         self.srv_horizontal = rospy.Service("~horizontal", Empty, self.cbSrvHorizontal)
         # Create a timer that calls the process function every 1.0 second
-        #self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbDisplay)
+        self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.frequency),self.cbControl)
 
         rospy.loginfo("[%s] Initialzed." %(self.node_name))
 
@@ -82,6 +95,26 @@ class serial_encoder_node(object):
         rospy.set_param(param_name,value) #Write to parameter server for transparancy
         rospy.loginfo("[%s] %s = %s " %(self.node_name,param_name,value))
         return value
+
+    def cbJoy(self, msg):
+        self.joy_msg = msg
+
+    def cbCtl(self, msg):
+        self.odo_msg = msg
+
+    def cbControl(self, event):
+        if self.joystick_state == True:
+            # joystick control
+            try:
+                self.cbJoyData(self.joy_msg)
+            except:
+                return
+        else:
+            # odometry control
+            try:
+                self.cbCtlData(self.odo_msg)
+            except:
+                return
 
     def cbState(self, msg):
         self.joystick_state = msg.data
@@ -140,8 +173,34 @@ class serial_encoder_node(object):
         self.cbMove(fetch_msg)
         return EmptyResponse()
 
+    def cbSrvShootLeft_2(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_left_2"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
+    def cbSrvShootRight_2(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_right_2"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
+    def cbSrvShootLeft_3(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_left_3"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
+    def cbSrvShootRight_3(self, req):
+        fetch_msg = String()
+        fetch_msg.data = "shoot_right_3"
+        self.cbMove(fetch_msg)
+        return EmptyResponse()
+
     def cbMove(self, msg):
         # send move according to message
+        self.shoot_left_flag = self.shoot_right_flag = 0.0
+        self.button_0 = self.button_1 = 2.0
         move = msg.data
         if move == "sleep":
             button_1 = 0.0
@@ -157,17 +216,34 @@ class serial_encoder_node(object):
             elif move == "close_left":
                 self.button_0 = button_0 = 0.0
             elif move == "open_right":
-                self.botton_1 = botton_1 = 1.0
+                self.button_1 = button_1 = 1.0
             elif move == "close_right":
-                self.botton_1 = botton_1 = 0.0
+                self.button_1 = button_1 = 0.0
+            elif move == "shoot_left":
+                self.shoot_left_flag = 1.0
+            elif move == "shoot_right":
+                self.shoot_left_flag = 2.0
+            elif move == "shoot_left_2":
+                self.shoot_left_flag = 2.0
+            elif move == "shoot_right_2":
+                self.shoot_right_flag = 2.0
+            elif move == "shoot_left_3":
+                self.shoot_left_flag = 3.0
+            elif move == "shoot_right_3":
+                self.shoot_right_flag = 3.0
             else:
                 return
-        data_list = translateCTLtoMove(-0.2, # fetch position
+        data_list = translateCTLtoMove(self.shoot_left_flag, # shoot left flag
                                       0.6,   # release position
                                       0.0,   # fetch speed
                                       0.0,   # release speed
                                       self.button_0,
                                       self.button_1)
+        
+        # write data to serial port
+        self.writeData(data_list)
+        return
+        
         # Write data to serial port
         for t in range(5):
             rospy.loginfo("*************************************************")
@@ -182,7 +258,9 @@ class serial_encoder_node(object):
         # check fsm state:
         if self.joystick_state == True:
             return
-        
+            
+        self.shoot_left_flag = self.shoot_right_flag = 0.0
+        self.button_0 = self.button_1 = 2.0
         # check protocol type
         if self.protocol_auto_flag:
             # Using protocol for auto-control
@@ -191,10 +269,10 @@ class serial_encoder_node(object):
             #                            msg.v_y/2.0,
             #                            msg.omega/2.0)
             data_list = translateAuto(
-                msg.v_x/2.0,
-                msg.v_y/2.0,
-                msg.omega/2.0,
-                -0.2, # fetch position
+                msg.v_x/4.0,
+                msg.v_y/4.0,
+                msg.omega/4.0,
+                0.0, # shoot
                 0.6,   # release position
                 self.fetch_state,   # fetch state
                 0.0,   # release speed
@@ -224,11 +302,15 @@ class serial_encoder_node(object):
         if plot_everything:
             self.display(data_list)
         
+        # write data to serial port
+        self.writeData(data_list)
+        return
+        
         # Write data to serial port
         #rospy.loginfo("*************************************************")
         for i, datum in enumerate(data_list):
             self.encoder.write(datum)
-            #rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
         self.encoder.write(13)
         self.encoder.write(10)
 
@@ -240,10 +322,10 @@ class serial_encoder_node(object):
         if self.protocol_auto_flag:
             # Using protocol for auto-control
             # translate data
-            data_list = translateAuto(msg.channel_0/3.0,
-                                -msg.channel_1/3.0,
-                                msg.channel_2/3.0,
-                                msg.channel_3,
+            data_list = translateAuto(msg.channel_0/5.0,
+                                -msg.channel_1/5.0,
+                                msg.channel_2/5.0,
+                                0.0,
                                 msg.channel_4,
                                 msg.channel_5,
                                 msg.channel_6,
@@ -275,7 +357,11 @@ class serial_encoder_node(object):
         if plot_everything:
             self.display(data_list)
 
-        # Write data to serial port
+        # write data to serial port
+        self.writeData(data_list)
+        return
+
+        # Write data to serial port old version
         rospy.loginfo("*************************************************")        
         # Then send joystick data
         for i, datum in enumerate(data_list):
@@ -290,6 +376,28 @@ class serial_encoder_node(object):
         #     self.encoder.write(0)
 
         self.Rate.sleep()
+
+    def writeData(self, data_list):
+        try:
+            # Write data to serial port
+            rospy.loginfo("*************************************************")        
+            # Then send joystick data
+            for i, datum in enumerate(data_list):
+                self.encoder.write(datum)
+                rospy.loginfo("[%s] signal: %s: %s" %(self.node_name, self.protocol[i], str(datum)))
+            self.encoder.write(13)
+            self.encoder.write(10)
+        except Exception as e:
+            print e
+            reconnect_success = False
+            while(reconnect_success==False):
+                # try to reconnect
+                try:
+                    self.encoder = Encoder(self.baudrate)
+                    reconnect_success = True
+                except Exception as e:
+                    print e
+                    rospy.sleep(0.1)
 
     def on_shutdown(self):
         rospy.loginfo("[%s] Shutting down." %(self.node_name))

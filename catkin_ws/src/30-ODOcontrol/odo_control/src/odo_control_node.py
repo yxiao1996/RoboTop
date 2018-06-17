@@ -4,7 +4,7 @@ import math
 import tf
 import numpy as np
 #from fuzzy_controllers import OmegaControl
-from std_msgs.msg import String
+from std_msgs.msg import String, Int32
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D, Twist
 from robocon_msgs.msg import BoolStamped, Pose2DStamped, Twist2DStamped
@@ -40,10 +40,14 @@ class odo_control_node(object):
         self.y_goal = 0.0
         self.theta_goal = 0.0
 
+        self.delta_y = 0.0
+
         # Initialize constants
         self.theta_thresh = 3.0
         self.omega = 0.2
         self.v_bar = 0.6
+        self.delta_y_thresh = 10.0
+        self.k_delta_y = 0.001
 
         # Initialize node rate
         self.rate = rospy.Rate(50)
@@ -56,12 +60,14 @@ class odo_control_node(object):
         self.sub_goal = rospy.Subscriber("~goal", Pose2DStamped, self.cbGoal, queue_size=1)
         self.sub_odometry = rospy.Subscriber("/odom", Odometry, self.cbOdom, queue_size=1)
         self.sub_pose = rospy.Subscriber("~pose", Pose2DStamped, self.cbPose, queue_size=1)
+        self.sub_delta_y = rospy.Subscriber("~delta_y", Int32, self.cbDeltaY, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         # Setup Services
         self.srv_reach = rospy.Service("~reach_goal", Empty, self.cbSrvReach)
+        self.srv_adjust_angle = rospy.Service("~adjust_angle", Empty, self.cbAdjustAngle)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.1)
-        self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
+        #self.control_timer = rospy.Timer(rospy.Duration.from_sec(self.pub_timestep),self.cbTimer)
 
         rospy.loginfo("[%s] Initialized." %(self.node_name))
 
@@ -73,6 +79,23 @@ class odo_control_node(object):
 
     def cbSwitch(self, msg):
         self.active = msg.data
+
+    def cbAdjustAngle(self, req):
+        while(abs(self.delta_y) > self.delta_y_thresh):
+            # if delta_y is positive turn left(positive), if delta_y is negative turn right(negative)
+            omega = self.delta_y * self.k_delta_y
+            x = y = 0.0
+            # Publish car command
+            twist_msg = Twist2DStamped()
+            twist_msg.header.stamp = rospy.Time.now()
+            twist_msg.v_x = x
+            twist_msg.v_y = y
+            twist_msg.omega = omega
+            self.pub_twist.publish(twist_msg)
+        return EmptyResponse()
+
+    def cbDeltaY(self, msg):
+        self.delta_y = float(msg.data)
 
     def cbSrvReach(self, req):
         reach_msg = BoolStamped()
@@ -155,7 +178,7 @@ class odo_control_node(object):
         pose_msg.theta = odom[2]
         self.cbPose(pose_msg, True, True)
 
-    def cbPose(self, msg, plot_pose=True, debug_flag=False):
+    def cbPose(self, msg, plot_pose=True, debug_flag=True):
         if debug_flag == False:
             return
         # Callback for pose message from decoder node
@@ -186,11 +209,21 @@ class odo_control_node(object):
         # Check at goal
         if abs(error_theta) < self.theta_thresh:
             if abs(error_x) < 100.0 and abs(error_y) < 100.0:
+                # Publish car command
+                twist_msg = Twist2DStamped()
+                twist_msg.header.stamp = rospy.Time.now()
+                twist_msg.v_x = 0.0
+                twist_msg.v_y = 0.0
+                twist_msg.omega = 0.0
+                self.pub_twist.publish(twist_msg)
+
+
                 reach_msg = BoolStamped()
                 reach_msg.header.stamp = rospy.Time.now()
                 reach_msg.data = True
                 self.pub_reach.publish(reach_msg)
                 self.active = False
+                return
         # for simplicity, use sign control, will add fuzzy controller
         sign_control = False
         if sign_control:
@@ -230,8 +263,8 @@ class odo_control_node(object):
             else:
                 #self.trigger = False
                 control_effort = self.sigmoid(res_distance)
-                v_x = -control_effort * np.cos(angle_car * np.pi / 180.0) / 1.0 #(res_error_x / res_distance)
-                v_y = -control_effort * np.sin(angle_car * np.pi / 180.0) / 1.0#(res_error_y / res_distance)
+                v_x = -control_effort * np.cos(angle_car * np.pi / 180.0) / 1.5 #(res_error_x / res_distance)
+                v_y = -control_effort * np.sin(angle_car * np.pi / 180.0) / 1.5#(res_error_y / res_distance)
 
         # Maintain the same frame with odometry
         simple_omega = False
@@ -252,12 +285,17 @@ class odo_control_node(object):
             #delta_theta = comp_theta / comp_theta_goal
             #error_theta = np.angle(delta_theta) / np.pi * 180.0
             rospy.loginfo("[%s] error theta [%s]"%(self.node_name, error_theta))
+            k_omega = 180.0
             if abs(error_theta) < self.theta_thresh:
                 omega = 0.0
             elif error_theta > 0.0:
-                omega = -0.2
+                v_x = v_x * 0.5
+                v_y = v_y * 0.5
+                omega = -abs(error_theta) / k_omega - 0.1
             else:
-                omega = 0.2
+                v_x = v_x * 0.5
+                v_y = v_y * 0.5
+                omega = abs(error_theta) / k_omega + 0.1
 
         # fuzzy controller
         use_fuzzy = False
@@ -273,7 +311,7 @@ class odo_control_node(object):
                 omega_ctl.compute()
                 omega = omega_ctl.output['out_omega']
                 omega = omega / 2.0
-
+        #rospy.loginfo("control effort [%s] [%s]")
         # Publish car command
         twist_msg = Twist2DStamped()
         twist_msg.header.stamp = rospy.Time.now()

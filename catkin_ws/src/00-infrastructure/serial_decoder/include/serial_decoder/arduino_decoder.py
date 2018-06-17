@@ -1,6 +1,8 @@
+import os
 import serial
 import struct
 import time
+import rospy
 
 class ArduinoDecoder():
     def __init__(self, baudrate, master=None):
@@ -14,24 +16,40 @@ class ArduinoDecoder():
         self.initThread(baudrate=baudrate)
         #time.sleep(1)
         
-    def initThread(self, com='/dev/ttyUSB1', baudrate=115200):
+    def initThread(self, com='/dev/ttyUSB-arduino', baudrate=115200):
         #baudrate = 230400
         #try:
+        os.chdir("/home/robocon/RoboTop")
+        os.system("./set_serial.sh")
         self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
         #except:
         #    com = '/dev/ttyUSB2'
         #    self.ser = serial.Serial(com, baudrate=baudrate, timeout=1)
+
+    def write(self, data):
+        #try:
+        self.ser.write(chr(data))
+        #except:
+        #    return
 
     def read_debug(self, length=8):
         self.ser.flushInput()
         #msg = self.ser.read(length)
         #return msg
         data_list = []
-        while(True):
+        #start = rospy.Time.now()
+        delta_t = 0.0
+        while(delta_t < 0.05):
+            #delta_t = (rospy.Time.now()-start).to_sec()
             #if len(data_list) < length:
+            buf_num = self.ser.in_waiting
+            if  buf_num > 0:
+                time.sleep(0.001)
+            else:
+                continue
             msg = self.ser.read()
-            print "***" + msg + "***"
-            print msg
+            #print "***" + msg + "***"
+            #print msg
             data = struct.unpack('B', msg)[0]
             #if data != 5:
             #    continue
@@ -75,6 +93,15 @@ class ArduinoDecoder():
                 low = struct.unpack('B', msg)[0]
                 data = high * 256 + low
                 data_list.append(data)
+                # first button
+                msg = self.ser.read(1)
+                data = struct.unpack('B', msg)[0]
+                data_list.append(data)
+                # second button
+                msg = self.ser.read(1)
+                data = struct.unpack('B', msg)[0]
+                data_list.append(data)
+                # tail
                 msg = self.ser.read()
                 data = struct.unpack('B', msg)[0]
                 #print data
@@ -92,7 +119,7 @@ class ArduinoDecoder():
                     #data_list.append(msg)
                     return data_list
 
-
+        return None
         msg = self.ser.read(length)
         return msg
         while(True):
@@ -113,6 +140,22 @@ class ArduinoDecoder():
                 #print (data_list)
                 #time.sleep(0.5)
                 return data_list
+if __name__ == '__main__':
+    decoder = ArduinoDecoder(19200)
+    #print decoder.read_debug()
+    count = 0
+    while(1):
+        print decoder.read_debug()
+        count += 1
+        if count == 10:
+            decoder.write(76)
+        if count == 20:
+            decoder.write(88)
+            count = 0
+    while(1):
+        decoder.write(76)
+        time.sleep(0.01)
 
-#decoder = ArduinoDecoder(115200)
-#print decoder.read_debug()
+
+
+

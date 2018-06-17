@@ -57,7 +57,8 @@ class MovePlanner(object):
         self.close_right = rospy.ServiceProxy('/Robo/serial_encoder_node/close_right', Empty)
         self.shoot_left = rospy.ServiceProxy('/Robo/serial_encoder_node/shoot_left', Empty)
         self.shoot_right = rospy.ServiceProxy('/Robo/serial_encoder_node/shoot_right', Empty)
-        
+        self.adjust_angle = rospy.ServiceProxy('/Robo/pid_control_node/adjust_angle', Empty)
+        self.lit = rospy.ServiceProxy('/Robo/serial_decoder_node/lit', Empty)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",0.5)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -73,8 +74,8 @@ class MovePlanner(object):
         return value
 
     def cbAckApril(self, msg):
-        if msg.data == True:
-            self.apriltag_flag = True
+        #if msg.data == True:
+        self.apriltag_flag = msg.data
 
     def cbAckLeftShoot(self, msg):
         self.left_shooting = msg.data
@@ -83,12 +84,13 @@ class MovePlanner(object):
         self.right_shooting = msg.data
     
     def cbAckLeftOpen(self, msg):
-        if msg.data == True:
-            self.left_open = False
+        #if msg.data == True:
+        self.left_open = msg.data
+        print "ack rec"
     
     def cbAckRightOpen(self, msg):
         if msg.data == True:
-            self.right_open = False
+            self.right_open = True
 
     def cbSwitch(self, msg):
         self.active = msg.data
@@ -129,15 +131,16 @@ class MovePlanner(object):
         # move_msg.data = self.move
         #self.pub_move.publish(move_msg)
         if self.move == 'sleep':
-            rospy.sleep(2)
+            rospy.sleep(4)
+        elif self.move == 'pass':
+            rospy.sleep(0.01)
         elif self.move == 'throw':
             rospy.sleep(10)
         elif self.move == 'joy':
             self.set_joy()
-        elif self.move == 'fetch':
+        elif self.move == 'release':
             self.release()
-            return
-            rospy.sleep(rospy.Duration.from_sec(10.0))
+        elif self.move == 'fetch':
             self.fetch()
         elif self.move == 'roi':
             set_msg = BoolStamped()
@@ -146,43 +149,44 @@ class MovePlanner(object):
         elif self.move == "find_circle":
             self.find_circle()
         elif self.move == "open_left":
-            if self.left_open == True:
-                return
-            else:
-                while(self.left_open == False):
-                    self.open_left()
-        elif self.move == "close_left":
             if self.left_open == False:
-                return
-            else:
+                while(self.left_open == False):
+                    print "loop"
+                    self.open_left()
+                    self.cmd_rate.sleep()
+        elif self.move == "close_left":
+            if self.left_open == True:
                 while(self.left_open == True):
                     self.close_left()
         elif self.move == "open_right":
-            if self.right_open == True:
-                return
-            else:
+            if self.right_open == False:
                 while(self.right_open == False):
                     self.open_right()
         elif self.move == "close_right":
-            if self.right_open == False:
-                return
-            else:
+            if self.right_open == True:
                 while(self.right_open == True):
                     self.open_right()
+        elif self.move == "shoot_right":
+            self.right_shooting = False
+            while(self.right_shooting == False):
+                self.shoot_right()
         elif self.move == "shoot_left":
             self.left_shooting = False
             while(self.left_shooting == False):
+                #self.lit()
                 self.shoot_left()
         elif self.move == "apriltag":
             self.apriltag_flag = False
             while(self.apriltag_flag == False):
                 self.cmd_rate.sleep()
         elif self.move == "wait_shoot":
-            if self.left_shooting == False and self.right_shooting == False:
-                return
-            else:
+            if self.left_shooting or self.right_shooting:
                 while(self.left_shooting or self.right_shooting):
                     self.cmd_rate.sleep()
+        elif self.move == "adjust_angle":
+            self.adjust_angle()
+        elif self.move == "lit":
+            self.lit()
         else:
             rospy.sleep(1)
         rospy.loginfo("[%s] send move: %s" %(self.node_name, self.move))

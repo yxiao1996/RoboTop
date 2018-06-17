@@ -3,6 +3,7 @@ import copy
 import rospy
 from std_msgs.msg import String, Float64MultiArray#Imports msg
 from robocon_msgs.msg import BoolStamped, Pose2DList, Pose2DStamped, FSMState
+from std_srvs.srv import EmptyRequest, EmptyResponse, Empty
 
 class task_planner_node(object):
     def __init__(self):
@@ -38,6 +39,7 @@ class task_planner_node(object):
         # Setup publishers
         self.pub_confrim = rospy.Publisher("~confirm", BoolStamped, queue_size=1)
         self.pub_finish = rospy.Publisher("~finish", BoolStamped, queue_size=1)
+        self.pub_reset = rospy.Publisher("~reset", BoolStamped, queue_size=1)
         self.pub_set_path = rospy.Publisher("~set_path", Pose2DList, queue_size=1)
         self.pub_set_move = rospy.Publisher("~set_move", String, queue_size=1)
         # Setup subscriber
@@ -48,6 +50,10 @@ class task_planner_node(object):
         self.sub_coord = rospy.Subscriber("~finish_coord", BoolStamped, self.cbFinishCoord, queue_size=1)
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
         self.sub_state = rospy.Subscriber("/Robo/fsm_node/state", FSMState, self.cbState)
+        # Setup service proxys
+        self.srv_macro0 = rospy.Service("~macro0", Empty, self.cbSrvMacor0)
+        self.srv_macro1 = rospy.Service("~macro1", Empty, self.cbSrvMacor1)
+        self.srv_macro2 = rospy.Service("~macro2", Empty, self.cbSrvMacor2)
         # Read parameters
         self.pub_timestep = self.setupParameter("~pub_timestep",1.0)
         # Create a timer that calls the cbTimer function every 1.0 second
@@ -69,6 +75,54 @@ class task_planner_node(object):
     def cbState(self, msg):
         self.state = msg.state
 
+    def cbSrvMacor0(self, msg):
+        try:
+            self.macro_task_index = 0
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+            self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("soft reset current macro task to macrotask 0: [%s]"%(self.current_macro_task))
+        except Exception as e:
+            rospy.loginfo(e)
+        # Publish finish message to enter planning state
+        finish_msg = BoolStamped()
+        finish_msg.header.stamp = rospy.Time.now()
+        finish_msg.data = True
+        self.pub_reset.publish(finish_msg)
+        return EmptyResponse()
+
+    def cbSrvMacor1(self, msg):
+        try:
+            self.macro_task_index = 1
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+            self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("soft reset current macro task to macrotask 1: [%s]"%(self.current_macro_task))
+        except Exception as e:
+            rospy.loginfo(e)
+        # Publish finish message to enter planning state
+        finish_msg = BoolStamped()
+        finish_msg.header.stamp = rospy.Time.now()
+        finish_msg.data = True
+        self.pub_reset.publish(finish_msg)
+        return EmptyResponse()
+
+    def cbSrvMacor2(self, msg):
+        try:
+            self.macro_task_index = 2
+            self.macro_tasks = rospy.get_param("~macro_tasks")
+            self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+            self.current_task = self.current_macro_task.pop()
+            rospy.loginfo("soft reset current macro task to macrotask 2: [%s]"%(self.current_macro_task))
+        except Exception as e:
+            rospy.loginfo(e)
+        # Publish finish message to enter planning state
+        finish_msg = BoolStamped()
+        finish_msg.header.stamp = rospy.Time.now()
+        finish_msg.data = True
+        self.pub_reset.publish(finish_msg)
+        return EmptyResponse()
+
     def cbFinishCoord(self, msg):
         if not self.state == "AT_GOAL":
             return
@@ -82,11 +136,15 @@ class task_planner_node(object):
                 self.macro_task_index += 1
                 self.macro_tasks = rospy.get_param("~macro_tasks")
                 self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
-                self.current_task = self.current_macro_task.pop()
                 rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
+                self.current_task = self.current_macro_task.pop()
             except:
                 # Or its the last task
-                return
+                self.macro_task_index -= 1 # do the last macro task
+                self.macro_tasks = rospy.get_param("~macro_tasks")
+                self.current_macro_task = self.macro_tasks[str('macro_task_' + str(self.macro_task_index))][:]
+                rospy.loginfo("set current macro task to [%s]"%(self.current_macro_task))
+                self.current_task = self.current_macro_task.pop()
         else:
             # else continue precious macro task
             #print self.macro_task_index
@@ -154,7 +212,7 @@ class task_planner_node(object):
                 # Publish finish message
                 finish_msg = BoolStamped()
                 finish_msg.header.stamp = rospy.Time.now()
-                finish_msg.data = False
+                finish_msg.data = True
                 #self.pub_finish.publish(finish_msg)
                 self.cbFinishCoord(finish_msg)
             return

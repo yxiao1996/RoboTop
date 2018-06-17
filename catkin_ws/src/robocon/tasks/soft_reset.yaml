@@ -1,0 +1,81 @@
+macro_tasks:
+
+  macro_task_0:
+  - move: shoot_left
+    path:
+    - [3000.0, 4500.0, 90.0]
+
+  - move: close_left
+    path:
+    - [2050.0, 4300.0, 0.0]
+
+  - move: sleep
+    path:
+    - [2050.0, 4300.0, 0.0]
+
+  - move: open_left
+    path:
+    - [2050.0, 4300.0, 0.0]
+
+  - move: apriltag
+    path:
+    - [2050.0, 4300.0, 0.0]
+
+  - move: pass
+    path:
+    - [0.0, 4300.0, 0.0]
+
+  macro_task_1:
+  - move: shoot_right
+    path:
+    - [3000.0, 6600.0, 90.0]
+  - move: pass
+    path:
+    - [700.0, 5500.0, 0.0]
+
+  - move: close_right
+    path:
+    - [1550.0, 4300.0, 0.0]
+ 
+  - move: apriltag
+    path:
+    - [1550.0, 4300.0, 0.0]
+
+  - move: open_right
+    path:
+    - [1550.0, 4300.0, 0.0]
+  
+  - move: apriltag
+    path:
+    - [1550.0, 4300.0, 0.0]
+
+  macro_task_2:
+  - move: pass
+    path:
+    - [2500.0, 6600.0, 0.0]
+
+  - move: shoot_left
+    path:
+    - [6000.0, 6500.0, 90.0]
+
+  - move: fetch
+    path:
+    - [1550.0, 6700.0, 0.0]
+
+  - move: sleep
+    path:
+    - [1550.0, 6700.0, 0.0]
+
+  - move: release
+    path:
+    - [1550.0, 6700.0, 0.0]
+
+
+  - move: apriltag
+    path:
+    - [1550.0, 6700.0, 0.0]
+
+
+
+  
+
